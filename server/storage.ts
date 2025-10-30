@@ -127,6 +127,7 @@ export class SupabaseStorage implements IStorage {
       clientPhone: row.client_phone,
       contractDuration: row.contract_duration,
       product: row.product,
+      ticketValue: row.ticket_value,
       pdfUrl: row.pdf_url,
       submittedAt: row.submitted_at,
     }));
@@ -153,6 +154,7 @@ export class SupabaseStorage implements IStorage {
       clientPhone: data.client_phone,
       contractDuration: data.contract_duration,
       product: data.product,
+      ticketValue: data.ticket_value,
       pdfUrl: data.pdf_url,
       submittedAt: data.submitted_at,
     };
@@ -165,6 +167,7 @@ export class SupabaseStorage implements IStorage {
       client_phone: insertContract.clientPhone,
       contract_duration: insertContract.contractDuration,
       product: insertContract.product,
+      ticket_value: insertContract.ticketValue,
       pdf_url: insertContract.pdfUrl,
     };
 
@@ -189,6 +192,7 @@ export class SupabaseStorage implements IStorage {
       clientPhone: data.client_phone,
       contractDuration: data.contract_duration,
       product: data.product,
+      ticketValue: data.ticket_value,
       pdfUrl: data.pdf_url,
       submittedAt: data.submitted_at,
     };

@@ -12,6 +12,7 @@ Sistema profissional de captura e gestão de contratos desenvolvido para ARVEN A
   - Número de telefone
   - Tempo de contrato (3 meses, 6 meses, 1 ano, 2 anos)
   - Produto comprado
+  - Valor do ticket (valor cobrado)
   - Upload de PDF do contrato assinado
 - **Upload de PDF**: Sistema seguro de upload usando Object Storage
 - **Validação**: Validação completa de dados usando Zod
@@ -68,6 +69,7 @@ contracts (
   client_phone TEXT NOT NULL,
   contract_duration TEXT NOT NULL,
   product TEXT NOT NULL,
+  ticket_value TEXT NOT NULL,
   pdf_url TEXT NOT NULL,
   submitted_at TIMESTAMP
 )
@@ -115,6 +117,7 @@ Quando um novo contrato é criado, o sistema envia automaticamente um webhook (s
     "clientPhone": "(00) 00000-0000",
     "contractDuration": "1_year",
     "product": "Produto Selecionado",
+    "ticketValue": "R$ 1.500,00",
     "pdfUrl": "/objects/uploads/...",
     "submittedAt": "2025-10-30T..."
   },

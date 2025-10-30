@@ -40,6 +40,7 @@ type Contract = {
   clientPhone: string;
   contractDuration: string;
   product: string;
+  ticketValue: string;
   pdfUrl: string;
   submittedAt: string;
 };
@@ -232,6 +233,7 @@ export default function AdminDashboard() {
                       <TableHead>Telefone</TableHead>
                       <TableHead>Produto</TableHead>
                       <TableHead>Duração</TableHead>
+                      <TableHead>Valor</TableHead>
                       <TableHead>Data</TableHead>
                       <TableHead>PDF</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
@@ -251,6 +253,9 @@ export default function AdminDashboard() {
                         </TableCell>
                         <TableCell data-testid={`cell-duration-${contract.id}`}>
                           {durationLabels[contract.contractDuration]}
+                        </TableCell>
+                        <TableCell data-testid={`cell-ticket-${contract.id}`}>
+                          {contract.ticketValue}
                         </TableCell>
                         <TableCell data-testid={`cell-date-${contract.id}`}>
                           {format(new Date(contract.submittedAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}
@@ -316,6 +321,10 @@ export default function AdminDashboard() {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Duração do Contrato</p>
                 <p className="text-lg">{durationLabels[selectedContract.contractDuration]}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Valor do Ticket</p>
+                <p className="text-lg font-semibold text-primary">{selectedContract.ticketValue}</p>
               </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Data de Envio</p>

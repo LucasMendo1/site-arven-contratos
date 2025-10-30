@@ -26,6 +26,7 @@ const contractFormSchema = z.object({
     required_error: "Por favor, selecione o tempo de contrato",
   }),
   product: z.string().min(2, "Por favor, selecione um produto"),
+  ticketValue: z.string().min(1, "Valor do ticket é obrigatório"),
   pdfUrl: z.string().min(1, "PDF é obrigatório"),
 });
 
@@ -51,6 +52,7 @@ export default function LandingPage() {
       clientName: "",
       clientPhone: "",
       product: "",
+      ticketValue: "",
       pdfUrl: "",
     },
   });
@@ -287,8 +289,24 @@ export default function LandingPage() {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="ticketValue" className="uppercase tracking-wide text-sm font-medium">
+                5. Valor do Ticket
+              </Label>
+              <Input
+                id="ticketValue"
+                {...form.register("ticketValue")}
+                placeholder="R$ 0,00"
+                className="h-12 text-base"
+                data-testid="input-ticket-value"
+              />
+              {form.formState.errors.ticketValue && (
+                <p className="text-sm text-destructive">{form.formState.errors.ticketValue.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
               <Label className="uppercase tracking-wide text-sm font-medium">
-                5. Upload do Contrato Assinado (PDF)
+                6. Upload do Contrato Assinado (PDF)
               </Label>
               <div className="relative">
                 <input

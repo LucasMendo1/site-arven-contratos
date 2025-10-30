@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS contracts (
   client_phone TEXT NOT NULL,
   contract_duration TEXT NOT NULL,
   product TEXT NOT NULL,
+  ticket_value TEXT NOT NULL,
   pdf_url TEXT NOT NULL,
   submitted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );

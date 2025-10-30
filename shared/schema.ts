@@ -26,6 +26,7 @@ export const contracts = pgTable("contracts", {
   clientPhone: text("client_phone").notNull(),
   contractDuration: text("contract_duration").notNull(),
   product: text("product").notNull(),
+  ticketValue: text("ticket_value").notNull(),
   pdfUrl: text("pdf_url").notNull(),
   submittedAt: timestamp("submitted_at").defaultNow().notNull(),
 });
@@ -38,6 +39,7 @@ export const insertContractSchema = createInsertSchema(contracts).omit({
   clientPhone: z.string().min(10, "Número de telefone inválido"),
   contractDuration: z.enum(["3_months", "6_months", "1_year", "2_years"]),
   product: z.string().min(2, "Por favor, selecione um produto"),
+  ticketValue: z.string().min(1, "Valor do ticket é obrigatório"),
   pdfUrl: z.string().min(1, "PDF é obrigatório"),
 });
 
