@@ -153,6 +153,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Object storage routes for PDF uploads
+  // NOTA: Rotas públicas - formulário de contrato é público (clientes enviam sem login)
   app.post("/api/objects/upload", async (req, res) => {
     try {
       const objectStorageService = new ObjectStorageService();

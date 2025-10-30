@@ -30,9 +30,11 @@ import {
   Settings,
   Calendar,
   Loader2,
+  Webhook,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import WebhookSettings from "./WebhookSettings";
 
 type Contract = {
   id: string;
@@ -86,7 +88,7 @@ export default function AdminDashboard() {
   const [, navigate] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
-  const [activeTab, setActiveTab] = useState<"all" | "active">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "active" | "settings">("all");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -185,11 +187,16 @@ export default function AdminDashboard() {
             Contratos Ativos
           </button>
           <button
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sidebar-foreground hover-elevate"
+            onClick={() => setActiveTab("settings")}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg font-medium ${
+              activeTab === "settings"
+                ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                : "text-sidebar-foreground hover-elevate"
+            }`}
             data-testid="nav-settings"
           >
-            <Settings className="w-5 h-5" />
-            Configurações
+            <Webhook className="w-5 h-5" />
+            Webhook
           </button>
         </nav>
 
@@ -210,7 +217,9 @@ export default function AdminDashboard() {
         <header className="bg-white border-b px-8 py-4">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold">
-              {activeTab === "all" ? "Todos os Contratos" : "Contratos Ativos"}
+              {activeTab === "all" && "Todos os Contratos"}
+              {activeTab === "active" && "Contratos Ativos"}
+              {activeTab === "settings" && "Configurações"}
             </h1>
             {activeTab === "active" && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -222,20 +231,24 @@ export default function AdminDashboard() {
         </header>
 
         <div className="p-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <Card className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-lg bg-primary/10">
-                  <FileText className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Total de Contratos</p>
-                  <p className="text-3xl font-bold" data-testid="stat-total-contracts">
-                    {contracts.length}
-                  </p>
-                </div>
-              </div>
-            </Card>
+          {activeTab === "settings" ? (
+            <WebhookSettings />
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <Card className="p-6">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-lg bg-primary/10">
+                      <FileText className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Total de Contratos</p>
+                      <p className="text-3xl font-bold" data-testid="stat-total-contracts">
+                        {contracts.length}
+                      </p>
+                    </div>
+                  </div>
+                </Card>
 
             <Card className="p-6">
               <div className="flex items-center gap-4">
@@ -398,6 +411,8 @@ export default function AdminDashboard() {
               </div>
             )}
           </Card>
+            </>
+          )}
         </div>
       </main>
 
