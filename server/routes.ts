@@ -9,6 +9,14 @@ import { ObjectPermission } from "./objectAcl";
 import { insertContractSchema } from "@shared/schema";
 import session from "express-session";
 import MemoryStore from "memorystore";
+import bcrypt from "bcrypt";
+
+// Extend express-session types
+declare module "express-session" {
+  interface SessionData {
+    userId: string;
+  }
+}
 
 const MemStore = MemoryStore(session);
 
@@ -220,6 +228,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.sendStatus(404);
       }
       return res.sendStatus(500);
+    }
+  });
+
+  // User management routes
+  app.get("/api/users", isAuthenticated, async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error: any) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.post("/api/users", isAuthenticated, async (req, res) => {
+    try {
+      const { email, password } = req.body;
+
+      if (!email || !password) {
+        return res.status(400).json({ error: "Email and password are required" });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ error: "User already exists" });
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const user = await storage.createUser({ email, password: hashedPassword });
+
+      res.json({
+        id: user.id,
+        email: user.email,
+        createdAt: user.createdAt,
+      });
+    } catch (error: any) {
+      console.error("Error creating user:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/users/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const currentUserId = req.session.userId;
+
+      // Prevent users from deleting themselves
+      if (id === currentUserId) {
+        return res.status(400).json({ error: "Cannot delete your own account" });
+      }
+
+      await storage.deleteUser(id);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 

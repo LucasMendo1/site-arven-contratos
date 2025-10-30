@@ -14,6 +14,8 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   verifyUserPassword(email: string, password: string): Promise<User | null>;
+  getAllUsers(): Promise<User[]>;
+  deleteUser(id: string): Promise<void>;
 
   getAllContracts(): Promise<Contract[]>;
   getContract(id: string): Promise<Contract | undefined>;
@@ -112,6 +114,36 @@ export class SupabaseStorage implements IStorage {
     }
 
     return null;
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    const { data, error } = await supabase
+      .from("users")
+      .select("id, email, created_at")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error getting all users:", error);
+      return [];
+    }
+
+    return (data || []).map((user) => ({
+      id: user.id,
+      email: user.email,
+      password: "", // Don't return passwords
+      createdAt: user.created_at,
+    }));
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    const { error } = await supabase
+      .from("users")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      throw new Error(`Failed to delete user: ${error.message}`);
+    }
   }
 
   async getAllContracts(): Promise<Contract[]> {
