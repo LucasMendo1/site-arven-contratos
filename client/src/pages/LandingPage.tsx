@@ -26,7 +26,7 @@ const contractFormSchema = z.object({
     required_error: "Por favor, selecione o tempo de contrato",
   }),
   product: z.string().min(2, "Por favor, selecione um produto"),
-  pdfUrl: z.string().url("URL do PDF inválida"),
+  pdfUrl: z.string().min(1, "PDF é obrigatório"),
 });
 
 type ContractFormData = z.infer<typeof contractFormSchema>;
@@ -90,7 +90,12 @@ export default function LandingPage() {
 
     try {
       const uploadUrlResponse = await apiRequest("POST", "/api/objects/upload", {});
-      const { uploadURL } = uploadUrlResponse;
+      const uploadUrlData = await uploadUrlResponse.json();
+      const { uploadURL } = uploadUrlData;
+
+      if (!uploadURL) {
+        throw new Error("Não foi possível gerar URL de upload");
+      }
 
       const uploadResponse = await fetch(uploadURL, {
         method: "PUT",
@@ -104,11 +109,19 @@ export default function LandingPage() {
         throw new Error("Falha no upload do PDF");
       }
 
+      // Extract the base URL without query parameters
+      const baseUrl = uploadURL.split("?")[0];
+      
       const pdfUrlResponse = await apiRequest("POST", "/api/contracts/pdf", {
-        pdfUrl: uploadURL.split("?")[0],
+        pdfUrl: baseUrl,
       });
+      const pdfUrlData = await pdfUrlResponse.json();
 
-      form.setValue("pdfUrl", pdfUrlResponse.pdfUrl);
+      if (!pdfUrlData?.pdfUrl) {
+        throw new Error("URL do PDF não foi retornada");
+      }
+
+      form.setValue("pdfUrl", pdfUrlData.pdfUrl);
       
       toast({
         title: "PDF enviado com sucesso",

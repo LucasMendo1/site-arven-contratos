@@ -38,7 +38,7 @@ export const insertContractSchema = createInsertSchema(contracts).omit({
   clientPhone: z.string().min(10, "Número de telefone inválido"),
   contractDuration: z.enum(["3_months", "6_months", "1_year", "2_years"]),
   product: z.string().min(2, "Por favor, selecione um produto"),
-  pdfUrl: z.string().url("URL do PDF inválida"),
+  pdfUrl: z.string().min(1, "PDF é obrigatório"),
 });
 
 export type InsertContract = z.infer<typeof insertContractSchema>;
