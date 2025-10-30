@@ -31,10 +31,12 @@ import {
   Calendar,
   Loader2,
   Webhook,
+  Plus,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import WebhookSettings from "./WebhookSettings";
+import NewContract from "./NewContract";
 
 type Contract = {
   id: string;
@@ -88,7 +90,7 @@ export default function AdminDashboard() {
   const [, navigate] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
-  const [activeTab, setActiveTab] = useState<"all" | "active" | "settings">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "active" | "new" | "settings">("all");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -187,6 +189,18 @@ export default function AdminDashboard() {
             Contratos Ativos
           </button>
           <button
+            onClick={() => setActiveTab("new")}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg font-medium ${
+              activeTab === "new"
+                ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                : "text-sidebar-foreground hover-elevate"
+            }`}
+            data-testid="nav-new-contract"
+          >
+            <Plus className="w-5 h-5" />
+            Novo Contrato
+          </button>
+          <button
             onClick={() => setActiveTab("settings")}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg font-medium ${
               activeTab === "settings"
@@ -219,6 +233,7 @@ export default function AdminDashboard() {
             <h1 className="text-2xl font-bold">
               {activeTab === "all" && "Todos os Contratos"}
               {activeTab === "active" && "Contratos Ativos"}
+              {activeTab === "new" && "Novo Contrato"}
               {activeTab === "settings" && "Configurações"}
             </h1>
             {activeTab === "active" && (
@@ -233,6 +248,8 @@ export default function AdminDashboard() {
         <div className="p-8">
           {activeTab === "settings" ? (
             <WebhookSettings />
+          ) : activeTab === "new" ? (
+            <NewContract />
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

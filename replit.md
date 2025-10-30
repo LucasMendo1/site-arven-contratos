@@ -7,17 +7,10 @@ Sistema profissional de captura e gestão de contratos desenvolvido para ARVEN A
 ## Funcionalidades Implementadas
 
 ### Landing Page (/)
-- **Formulário Multi-Etapa**: Coleta de dados do cliente em etapas visuais claras
-  - Nome do cliente
-  - Número de telefone
-  - Tempo de contrato (3 meses, 6 meses, 1 ano, 2 anos)
-  - Produto comprado
-  - Valor do ticket (valor cobrado)
-  - Upload de PDF do contrato assinado
-- **Upload de PDF**: Sistema seguro de upload usando Object Storage
-- **Validação**: Validação completa de dados usando Zod
+- **Página Pública**: Página informativa sobre o sistema
+- **Acesso Restrito**: Informa que apenas usuários autorizados podem acessar
+- **Botão de Login**: Redireciona para área administrativa
 - **Design ARVEN**: Interface profissional seguindo cores da marca (azul navy #1a2332)
-- **Feedback Visual**: Estados de loading, sucesso e erro bem projetados
 
 ### Login Administrativo (/login)
 - Autenticação via Supabase
@@ -25,12 +18,19 @@ Sistema profissional de captura e gestão de contratos desenvolvido para ARVEN A
 - Toggle de visualização de senha
 - Interface clean e profissional
 
-### Dashboard Administrativo (/admin)
-- **Duas Abas de Visualização**:
-  - **Todos os Contratos**: Lista completa de todos os contratos enviados
+### Dashboard Administrativo (/admin) - ACESSO PRIVADO
+- **Quatro Abas de Funcionalidades**:
+  - **Todos os Contratos**: Lista completa de todos os contratos cadastrados
   - **Contratos Ativos**: Mostra apenas contratos ativos ou expirando em breve
+  - **Novo Contrato**: Formulário para admins criarem novos contratos
+  - **Webhook**: Configuração de notificações automáticas
+- **Criação de Contratos (PRIVADO)**:
+  - Apenas admins logados podem criar contratos
+  - Formulário completo com validação
+  - Upload seguro de PDF do contrato assinado
+  - Validação de todos os campos obrigatórios
 - **Estatísticas**: Cards com métricas (total, contratos do mês, PDFs recebidos)
-- **Busca**: Filtro por nome, telefone ou produto em ambas as abas
+- **Busca**: Filtro por nome, telefone ou produto
 - **Status de Expiração**: 
   - Cálculo automático baseado em data de início + duração do contrato
   - Badge visual com status (Ativo = verde, Expirando ≤30 dias = laranja, Expirado = vermelho)
@@ -163,24 +163,28 @@ Quando um novo contrato é criado, o sistema envia automaticamente um webhook (s
 
 ## Fluxo de Usuário
 
-### Cliente (Landing Page)
-1. Acessa a landing page
-2. Vê informações sobre ARVEN e formulário
-3. Preenche dados pessoais
-4. Seleciona tempo de contrato (radio buttons estilizados)
-5. Escolhe produto do dropdown
-6. Faz upload do PDF do contrato
-7. Submete o formulário
-8. Recebe confirmação de sucesso
+### Visitante (Landing Page)
+1. Acessa a landing page (/)
+2. Vê página informativa sobre o sistema ARVEN
+3. É informado que o acesso é restrito
+4. Clica em "Acessar Sistema" para ir ao login
 
 ### Admin (Dashboard)
 1. Acessa /login
-2. Faz login com credenciais
+2. Faz login com credenciais (admin@arven.com / admin123)
 3. É redirecionado para /admin
-4. Visualiza estatísticas e lista de contratos
-5. Pode buscar, visualizar detalhes e baixar PDFs
-6. Pode excluir contratos se necessário
-7. Logout quando terminar
+4. **Pode criar novos contratos**:
+   - Clica em "Novo Contrato" na sidebar
+   - Preenche dados do cliente
+   - Seleciona duração e produto
+   - Faz upload do PDF assinado
+   - Salva o contrato
+5. Visualiza estatísticas e lista de contratos
+6. Navega entre abas (Todos / Ativos / Novo / Webhook)
+7. Pode buscar, visualizar detalhes e baixar PDFs
+8. Pode excluir contratos se necessário
+9. Configura webhook para notificações automáticas
+10. Logout quando terminar
 
 ## Segurança
 

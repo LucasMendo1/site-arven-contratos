@@ -106,7 +106,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/contracts", async (req, res) => {
+  app.post("/api/contracts", isAuthenticated, async (req, res) => {
     try {
       const validatedData = insertContractSchema.parse(req.body);
       const contract = await storage.createContract(validatedData);
@@ -153,8 +153,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Object storage routes for PDF uploads
-  // NOTA: Rotas públicas - formulário de contrato é público (clientes enviam sem login)
-  app.post("/api/objects/upload", async (req, res) => {
+  // NOTA: Rotas protegidas - apenas admins podem fazer upload
+  app.post("/api/objects/upload", isAuthenticated, async (req, res) => {
     try {
       const objectStorageService = new ObjectStorageService();
       const uploadURL = await objectStorageService.getObjectEntityUploadURL();
@@ -175,7 +175,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/contracts/pdf", async (req, res) => {
+  app.post("/api/contracts/pdf", isAuthenticated, async (req, res) => {
     try {
       const { pdfUrl } = req.body;
       
