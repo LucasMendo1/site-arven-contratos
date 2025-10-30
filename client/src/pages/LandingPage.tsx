@@ -276,11 +276,11 @@ export default function LandingPage() {
                   <SelectValue placeholder="Selecione um produto" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Consultoria Empresarial">Consultoria Empresarial</SelectItem>
-                  <SelectItem value="Assessoria Jurídica">Assessoria Jurídica</SelectItem>
-                  <SelectItem value="Gestão de Projetos">Gestão de Projetos</SelectItem>
-                  <SelectItem value="Planejamento Estratégico">Planejamento Estratégico</SelectItem>
-                  <SelectItem value="Auditoria e Compliance">Auditoria e Compliance</SelectItem>
+                  <SelectItem value="Core">Core</SelectItem>
+                  <SelectItem value="Tráfego Pago">Tráfego Pago</SelectItem>
+                  <SelectItem value="Automações">Automações</SelectItem>
+                  <SelectItem value="Sites">Sites</SelectItem>
+                  <SelectItem value="Outros">Outros</SelectItem>
                 </SelectContent>
               </Select>
               {form.formState.errors.product && (
