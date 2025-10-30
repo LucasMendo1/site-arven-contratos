@@ -95,13 +95,18 @@ export class SupabaseStorage implements IStorage {
   }
 
   async verifyUserPassword(email: string, password: string): Promise<User | null> {
+    console.log("🔍 Looking for user:", email);
     const user = await this.getUserByEmail(email);
     if (!user) {
+      console.log("❌ User not found in database:", email);
       return null;
     }
 
+    console.log("👤 User found, verifying password...");
     // Compare the provided password with the hashed password
     const isValid = await bcrypt.compare(password, user.password);
+    console.log("🔑 Password valid:", isValid);
+    
     if (isValid) {
       return user;
     }
