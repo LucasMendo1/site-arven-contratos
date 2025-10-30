@@ -26,12 +26,19 @@ Sistema profissional de captura e gestão de contratos desenvolvido para ARVEN A
 - Interface clean e profissional
 
 ### Dashboard Administrativo (/admin)
-- **Visualização de Contratos**: Tabela completa com todos os contratos enviados
+- **Duas Abas de Visualização**:
+  - **Todos os Contratos**: Lista completa de todos os contratos enviados
+  - **Contratos Ativos**: Mostra apenas contratos ativos ou expirando em breve
 - **Estatísticas**: Cards com métricas (total, contratos do mês, PDFs recebidos)
-- **Busca**: Filtro por nome, telefone ou produto
+- **Busca**: Filtro por nome, telefone ou produto em ambas as abas
+- **Status de Expiração**: 
+  - Cálculo automático baseado em data de início + duração do contrato
+  - Badge visual com status (Ativo = verde, Expirando ≤30 dias = laranja, Expirado = vermelho)
+  - Dias restantes até expiração
+  - Data de expiração calculada
 - **Download de PDFs**: Acesso direto aos contratos assinados
-- **Gestão**: Visualizar detalhes e excluir contratos
-- **Sidebar**: Navegação lateral fixa com logo ARVEN
+- **Gestão**: Visualizar detalhes completos e excluir contratos
+- **Sidebar**: Navegação lateral fixa com logo ARVEN e botões de navegação
 - **Logout**: Sistema de logout seguro
 
 ## Arquitetura Técnica
@@ -201,17 +208,31 @@ Quando um novo contrato é criado, o sistema envia automaticamente um webhook (s
 - Sidebar responsiva (converte em nav inferior em mobile)
 - Tabelas com scroll horizontal em mobile
 
+## Status de Contratos
+
+O sistema calcula automaticamente o status de cada contrato:
+
+- **Ativo** (Verde): Mais de 30 dias restantes
+- **Expirando** (Laranja): 30 dias ou menos até expirar
+- **Expirado** (Vermelho): Data de expiração já passou
+
+Cálculo de expiração:
+- Data de início: `submitted_at` (data de envio do contrato)
+- Duração: 3 meses, 6 meses, 1 ano ou 2 anos
+- Data de expiração: Data de início + duração do contrato
+
 ## Próximos Passos (Futuras Melhorias)
 
-- [ ] Hash de senhas com bcrypt
 - [ ] Interface para configurar webhook no admin
-- [ ] Filtros avançados (por data, duração, produto)
+- [ ] Filtros avançados (por data, status de expiração, produto)
 - [ ] Exportação de dados (CSV/Excel)
-- [ ] Notificações por email
+- [ ] Notificações por email quando contratos estiverem próximos de expirar
+- [ ] Renovação automática de contratos
 - [ ] Assinatura digital integrada
 - [ ] Validação de telefone brasileiro
 - [ ] Multi-tenant support
 - [ ] Auditoria de ações admin
+- [ ] Dashboard com gráficos de métricas
 
 ## Estrutura de Arquivos
 

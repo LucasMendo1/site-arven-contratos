@@ -52,10 +52,41 @@ const durationLabels: Record<string, string> = {
   "2_years": "2 Anos",
 };
 
+const durationMonths: Record<string, number> = {
+  "3_months": 3,
+  "6_months": 6,
+  "1_year": 12,
+  "2_years": 24,
+};
+
+function getContractStatus(submittedAt: string, duration: string): {
+  status: "active" | "expiring" | "expired";
+  daysRemaining: number;
+  expirationDate: Date;
+} {
+  const startDate = new Date(submittedAt);
+  const months = durationMonths[duration] || 12;
+  const expirationDate = new Date(startDate);
+  expirationDate.setMonth(expirationDate.getMonth() + months);
+  
+  const now = new Date();
+  const daysRemaining = Math.ceil((expirationDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  
+  let status: "active" | "expiring" | "expired" = "active";
+  if (daysRemaining < 0) {
+    status = "expired";
+  } else if (daysRemaining <= 30) {
+    status = "expiring";
+  }
+  
+  return { status, daysRemaining, expirationDate };
+}
+
 export default function AdminDashboard() {
   const [, navigate] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
+  const [activeTab, setActiveTab] = useState<"all" | "active">("all");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -100,6 +131,18 @@ export default function AdminDashboard() {
       contract.product.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const activeContracts = contracts.filter((contract) => {
+    const { status } = getContractStatus(contract.submittedAt, contract.contractDuration);
+    return status === "active" || status === "expiring";
+  });
+
+  const displayedContracts = activeTab === "active" ? activeContracts.filter(
+    (contract) =>
+      contract.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      contract.clientPhone.includes(searchTerm) ||
+      contract.product.toLowerCase().includes(searchTerm.toLowerCase())
+  ) : filteredContracts;
+
   const thisMonthContracts = contracts.filter((contract) => {
     const contractDate = new Date(contract.submittedAt);
     const now = new Date();
@@ -118,11 +161,28 @@ export default function AdminDashboard() {
         
         <nav className="px-3 space-y-1">
           <button
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-            data-testid="nav-contracts"
+            onClick={() => setActiveTab("all")}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg font-medium ${
+              activeTab === "all"
+                ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                : "text-sidebar-foreground hover-elevate"
+            }`}
+            data-testid="nav-all-contracts"
           >
             <FileText className="w-5 h-5" />
-            Contratos
+            Todos os Contratos
+          </button>
+          <button
+            onClick={() => setActiveTab("active")}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg font-medium ${
+              activeTab === "active"
+                ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                : "text-sidebar-foreground hover-elevate"
+            }`}
+            data-testid="nav-active-contracts"
+          >
+            <Calendar className="w-5 h-5" />
+            Contratos Ativos
           </button>
           <button
             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sidebar-foreground hover-elevate"
@@ -149,7 +209,15 @@ export default function AdminDashboard() {
       <main className="ml-64">
         <header className="bg-white border-b px-8 py-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold">Contratos</h1>
+            <h1 className="text-2xl font-bold">
+              {activeTab === "all" ? "Todos os Contratos" : "Contratos Ativos"}
+            </h1>
+            {activeTab === "active" && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Calendar className="w-4 h-4" />
+                <span>{activeContracts.length} contrato{activeContracts.length !== 1 ? "s" : ""} ativo{activeContracts.length !== 1 ? "s" : ""}</span>
+              </div>
+            )}
           </div>
         </header>
 
@@ -216,12 +284,12 @@ export default function AdminDashboard() {
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
               </div>
-            ) : filteredContracts.length === 0 ? (
+            ) : displayedContracts.length === 0 ? (
               <div className="text-center py-12">
                 <FileText className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-lg font-medium">Nenhum contrato encontrado</p>
                 <p className="text-muted-foreground">
-                  {searchTerm ? "Tente uma busca diferente" : "Os contratos enviados aparecerão aqui"}
+                  {searchTerm ? "Tente uma busca diferente" : activeTab === "active" ? "Nenhum contrato ativo no momento" : "Os contratos enviados aparecerão aqui"}
                 </p>
               </div>
             ) : (
@@ -235,62 +303,96 @@ export default function AdminDashboard() {
                       <TableHead>Duração</TableHead>
                       <TableHead>Valor</TableHead>
                       <TableHead>Data</TableHead>
+                      {activeTab === "active" && <TableHead>Status</TableHead>}
                       <TableHead>PDF</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredContracts.map((contract) => (
-                      <TableRow key={contract.id} className="hover:bg-muted/50">
-                        <TableCell className="font-medium" data-testid={`cell-name-${contract.id}`}>
-                          {contract.clientName}
-                        </TableCell>
-                        <TableCell data-testid={`cell-phone-${contract.id}`}>
-                          {contract.clientPhone}
-                        </TableCell>
-                        <TableCell data-testid={`cell-product-${contract.id}`}>
-                          {contract.product}
-                        </TableCell>
-                        <TableCell data-testid={`cell-duration-${contract.id}`}>
-                          {durationLabels[contract.contractDuration]}
-                        </TableCell>
-                        <TableCell data-testid={`cell-ticket-${contract.id}`}>
-                          {contract.ticketValue}
-                        </TableCell>
-                        <TableCell data-testid={`cell-date-${contract.id}`}>
-                          {format(new Date(contract.submittedAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => window.open(contract.pdfUrl, "_blank")}
-                            data-testid={`button-download-${contract.id}`}
-                          >
-                            <Download className="w-4 h-4" />
-                          </Button>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setSelectedContract(contract)}
-                            data-testid={`button-view-${contract.id}`}
-                          >
-                            Ver
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => deleteContractMutation.mutate(contract.id)}
-                            className="text-destructive hover:text-destructive"
-                            data-testid={`button-delete-${contract.id}`}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {displayedContracts.map((contract) => {
+                      const { status, daysRemaining, expirationDate } = getContractStatus(
+                        contract.submittedAt,
+                        contract.contractDuration
+                      );
+                      
+                      return (
+                        <TableRow key={contract.id} className="hover:bg-muted/50">
+                          <TableCell className="font-medium" data-testid={`cell-name-${contract.id}`}>
+                            {contract.clientName}
+                          </TableCell>
+                          <TableCell data-testid={`cell-phone-${contract.id}`}>
+                            {contract.clientPhone}
+                          </TableCell>
+                          <TableCell data-testid={`cell-product-${contract.id}`}>
+                            {contract.product}
+                          </TableCell>
+                          <TableCell data-testid={`cell-duration-${contract.id}`}>
+                            {durationLabels[contract.contractDuration]}
+                          </TableCell>
+                          <TableCell data-testid={`cell-ticket-${contract.id}`}>
+                            {contract.ticketValue}
+                          </TableCell>
+                          <TableCell data-testid={`cell-date-${contract.id}`}>
+                            {format(new Date(contract.submittedAt), "dd/MM/yyyy", { locale: ptBR })}
+                          </TableCell>
+                          {activeTab === "active" && (
+                            <TableCell data-testid={`cell-status-${contract.id}`}>
+                              <div className="flex flex-col gap-1">
+                                <div className="flex items-center gap-2">
+                                  {status === "active" && (
+                                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-700">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-green-600"></span>
+                                      Ativo
+                                    </span>
+                                  )}
+                                  {status === "expiring" && (
+                                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-orange-500/10 text-orange-700">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-orange-600"></span>
+                                      Expirando
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-xs text-muted-foreground">
+                                  {daysRemaining > 0 ? `${daysRemaining} dia${daysRemaining !== 1 ? "s" : ""} restante${daysRemaining !== 1 ? "s" : ""}` : "Expirado"}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  Expira: {format(expirationDate, "dd/MM/yyyy", { locale: ptBR })}
+                                </span>
+                              </div>
+                            </TableCell>
+                          )}
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => window.open(contract.pdfUrl, "_blank")}
+                              data-testid={`button-download-${contract.id}`}
+                            >
+                              <Download className="w-4 h-4" />
+                            </Button>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setSelectedContract(contract)}
+                              data-testid={`button-view-${contract.id}`}
+                            >
+                              Ver
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => deleteContractMutation.mutate(contract.id)}
+                              className="text-destructive hover:text-destructive"
+                              data-testid={`button-delete-${contract.id}`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
@@ -304,54 +406,96 @@ export default function AdminDashboard() {
           <DialogHeader>
             <DialogTitle>Detalhes do Contrato</DialogTitle>
           </DialogHeader>
-          {selectedContract && (
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Cliente</p>
-                <p className="text-lg font-semibold">{selectedContract.clientName}</p>
+          {selectedContract && (() => {
+            const { status, daysRemaining, expirationDate } = getContractStatus(
+              selectedContract.submittedAt,
+              selectedContract.contractDuration
+            );
+            
+            return (
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Cliente</p>
+                  <p className="text-lg font-semibold">{selectedContract.clientName}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Telefone</p>
+                  <p className="text-lg">{selectedContract.clientPhone}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Produto</p>
+                  <p className="text-lg">{selectedContract.product}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Duração do Contrato</p>
+                  <p className="text-lg">{durationLabels[selectedContract.contractDuration]}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Valor do Ticket</p>
+                  <p className="text-lg font-semibold text-primary">{selectedContract.ticketValue}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Data de Início</p>
+                  <p className="text-lg">
+                    {format(new Date(selectedContract.submittedAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                  </p>
+                </div>
+                <div className="p-4 rounded-lg bg-muted/50 border">
+                  <p className="text-sm font-medium text-muted-foreground mb-2">Status do Contrato</p>
+                  <div className="flex items-center gap-2 mb-2">
+                    {status === "active" && (
+                      <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium bg-green-500/10 text-green-700 border border-green-200">
+                        <span className="w-2 h-2 rounded-full bg-green-600"></span>
+                        Ativo
+                      </span>
+                    )}
+                    {status === "expiring" && (
+                      <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium bg-orange-500/10 text-orange-700 border border-orange-200">
+                        <span className="w-2 h-2 rounded-full bg-orange-600"></span>
+                        Expirando em Breve
+                      </span>
+                    )}
+                    {status === "expired" && (
+                      <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium bg-red-500/10 text-red-700 border border-red-200">
+                        <span className="w-2 h-2 rounded-full bg-red-600"></span>
+                        Expirado
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {daysRemaining > 0 ? (
+                      <>
+                        <strong>{daysRemaining} dia{daysRemaining !== 1 ? "s" : ""}</strong> restante{daysRemaining !== 1 ? "s" : ""} até expirar
+                      </>
+                    ) : (
+                      <>Expirou há <strong>{Math.abs(daysRemaining)} dia{Math.abs(daysRemaining) !== 1 ? "s" : ""}</strong></>
+                    )}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Data de expiração: <strong>{format(expirationDate, "dd/MM/yyyy", { locale: ptBR })}</strong>
+                  </p>
+                </div>
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    onClick={() => window.open(selectedContract.pdfUrl, "_blank")}
+                    className="flex-1"
+                    data-testid="button-view-pdf"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Baixar PDF
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => deleteContractMutation.mutate(selectedContract.id)}
+                    data-testid="button-delete-contract"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Excluir
+                  </Button>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Telefone</p>
-                <p className="text-lg">{selectedContract.clientPhone}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Produto</p>
-                <p className="text-lg">{selectedContract.product}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Duração do Contrato</p>
-                <p className="text-lg">{durationLabels[selectedContract.contractDuration]}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Valor do Ticket</p>
-                <p className="text-lg font-semibold text-primary">{selectedContract.ticketValue}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Data de Envio</p>
-                <p className="text-lg">
-                  {format(new Date(selectedContract.submittedAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                </p>
-              </div>
-              <div className="flex gap-3 pt-4">
-                <Button
-                  onClick={() => window.open(selectedContract.pdfUrl, "_blank")}
-                  className="flex-1"
-                  data-testid="button-view-pdf"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Baixar PDF
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => deleteContractMutation.mutate(selectedContract.id)}
-                  data-testid="button-delete-contract"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Excluir
-                </Button>
-              </div>
-            </div>
-          )}
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>
