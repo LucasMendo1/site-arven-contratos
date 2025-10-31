@@ -10,6 +10,8 @@ import { insertContractSchema } from "@shared/schema";
 import session from "express-session";
 import MemoryStore from "memorystore";
 import bcrypt from "bcrypt";
+import multer from "multer";
+import { randomUUID } from "crypto";
 
 // Extend express-session types
 declare module "express-session" {
@@ -160,6 +162,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Configuração do multer para upload local
+  const upload = multer({ 
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+    fileFilter: (req, file, cb) => {
+      if (file.mimetype === 'application/pdf') {
+        cb(null, true);
+      } else {
+        cb(new Error('Only PDF files are allowed'));
+      }
+    }
+  });
+
   // Object storage routes for PDF uploads
   // NOTA: Rotas protegidas - apenas admins podem fazer upload
   app.post("/api/objects/upload", isAuthenticated, async (req, res) => {
@@ -179,6 +194,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Get upload URL error:", error.message || error);
       res.status(500).json({ 
         error: "Failed to generate upload URL",
+        details: error.message 
+      });
+    }
+  });
+
+  // Endpoint para upload local (usado no Docker)
+  app.post("/api/upload/local", isAuthenticated, upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      const objectStorageService = new ObjectStorageService();
+      const objectId = randomUUID();
+      const objectPath = `/objects/uploads/${objectId}`;
+      
+      // Salva o arquivo localmente
+      await objectStorageService.saveLocalFile(req.file.buffer, objectPath);
+      
+      console.log("[Local Upload] File saved:", objectPath);
+      
+      res.json({ objectPath });
+    } catch (error: any) {
+      console.error("Local upload error:", error.message || error);
+      res.status(500).json({ 
+        error: "Failed to upload file",
         details: error.message 
       });
     }

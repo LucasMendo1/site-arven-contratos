@@ -1,6 +1,8 @@
 import { Storage, File } from "@google-cloud/storage";
 import { Response } from "express";
 import { randomUUID } from "crypto";
+import * as fs from "fs";
+import * as path from "path";
 import {
   ObjectAclPolicy,
   ObjectPermission,
@@ -11,7 +13,12 @@ import {
 
 const REPLIT_SIDECAR_ENDPOINT = "http://127.0.0.1:1106";
 
-export const objectStorageClient = new Storage({
+// Detecta se está rodando no Replit ou Docker
+const isReplit = fs.existsSync("/.replit");
+const LOCAL_STORAGE_PATH = "/tmp/uploads";
+
+// Apenas inicializa Google Cloud Storage se estiver no Replit
+export const objectStorageClient = isReplit ? new Storage({
   credentials: {
     audience: "replit",
     subject_token_type: "access_token",
@@ -27,7 +34,7 @@ export const objectStorageClient = new Storage({
     universe_domain: "googleapis.com",
   },
   projectId: "",
-});
+}) : null as any;
 
 export class ObjectNotFoundError extends Error {
   constructor() {
@@ -38,9 +45,25 @@ export class ObjectNotFoundError extends Error {
 }
 
 export class ObjectStorageService {
-  constructor() {}
+  constructor() {
+    // Cria diretórios locais se não estiver no Replit
+    if (!isReplit) {
+      const dirs = [
+        path.join(LOCAL_STORAGE_PATH, "private", "uploads"),
+        path.join(LOCAL_STORAGE_PATH, "public"),
+      ];
+      dirs.forEach(dir => {
+        if (!fs.existsSync(dir)) {
+          fs.mkdirSync(dir, { recursive: true });
+        }
+      });
+    }
+  }
 
   getPublicObjectSearchPaths(): Array<string> {
+    if (!isReplit) {
+      return [path.join(LOCAL_STORAGE_PATH, "public")];
+    }
     const pathsStr = process.env.PUBLIC_OBJECT_SEARCH_PATHS || "";
     const paths = Array.from(
       new Set(
@@ -60,6 +83,9 @@ export class ObjectStorageService {
   }
 
   getPrivateObjectDir(): string {
+    if (!isReplit) {
+      return path.join(LOCAL_STORAGE_PATH, "private");
+    }
     const dir = process.env.PRIVATE_OBJECT_DIR || "";
     if (!dir) {
       throw new Error(
@@ -71,6 +97,18 @@ export class ObjectStorageService {
   }
 
   async searchPublicObject(filePath: string): Promise<File | null> {
+    if (!isReplit) {
+      // Armazenamento local
+      for (const searchPath of this.getPublicObjectSearchPaths()) {
+        const fullPath = path.join(searchPath, filePath);
+        if (fs.existsSync(fullPath)) {
+          return { localPath: fullPath } as any;
+        }
+      }
+      return null;
+    }
+
+    // Replit Object Storage (Google Cloud)
     for (const searchPath of this.getPublicObjectSearchPaths()) {
       const fullPath = `${searchPath}/${filePath}`;
 
@@ -87,8 +125,21 @@ export class ObjectStorageService {
     return null;
   }
 
-  async downloadObject(file: File, res: Response, cacheTtlSec: number = 3600) {
+  async downloadObject(file: any, res: Response, cacheTtlSec: number = 3600) {
     try {
+      // Armazenamento local
+      if (file.localPath) {
+        const stat = fs.statSync(file.localPath);
+        res.set({
+          "Content-Type": "application/pdf",
+          "Content-Length": stat.size,
+          "Cache-Control": `private, max-age=${cacheTtlSec}`,
+        });
+        fs.createReadStream(file.localPath).pipe(res);
+        return;
+      }
+
+      // Replit Object Storage
       const [metadata] = await file.getMetadata();
       const aclPolicy = await getObjectAclPolicy(file);
       const isPublic = aclPolicy?.visibility === "public";
@@ -103,7 +154,7 @@ export class ObjectStorageService {
 
       const stream = file.createReadStream();
 
-      stream.on("error", (err) => {
+      stream.on("error", (err: any) => {
         console.error("Stream error:", err);
         if (!res.headersSent) {
           res.status(500).json({ error: "Error streaming file" });
@@ -120,6 +171,17 @@ export class ObjectStorageService {
   }
 
   async getObjectEntityUploadURL(): Promise<{ uploadURL: string; objectPath: string }> {
+    if (!isReplit) {
+      // Armazenamento local - retorna path local
+      const objectId = randomUUID();
+      const objectPath = `/objects/uploads/${objectId}`;
+      return { 
+        uploadURL: `/api/upload/local`, // Endpoint especial para upload local
+        objectPath 
+      };
+    }
+
+    // Replit Object Storage
     const privateObjectDir = this.getPrivateObjectDir();
     if (!privateObjectDir) {
       throw new Error(
@@ -145,7 +207,7 @@ export class ObjectStorageService {
     return { uploadURL, objectPath };
   }
 
-  async getObjectEntityFile(objectPath: string): Promise<File> {
+  async getObjectEntityFile(objectPath: string): Promise<any> {
     if (!objectPath.startsWith("/objects/")) {
       throw new ObjectNotFoundError();
     }
@@ -156,6 +218,17 @@ export class ObjectStorageService {
     }
 
     const entityId = parts.slice(1).join("/");
+
+    if (!isReplit) {
+      // Armazenamento local
+      const localPath = path.join(this.getPrivateObjectDir(), entityId);
+      if (!fs.existsSync(localPath)) {
+        throw new ObjectNotFoundError();
+      }
+      return { localPath };
+    }
+
+    // Replit Object Storage
     let entityDir = this.getPrivateObjectDir();
     if (!entityDir.endsWith("/")) {
       entityDir = `${entityDir}/`;
@@ -172,6 +245,11 @@ export class ObjectStorageService {
   }
 
   normalizeObjectEntityPath(rawPath: string): string {
+    if (!isReplit) {
+      // Armazenamento local - apenas retorna o path
+      return rawPath;
+    }
+
     if (!rawPath.startsWith("https://storage.googleapis.com/")) {
       return rawPath;
     }
@@ -196,6 +274,11 @@ export class ObjectStorageService {
     rawPath: string,
     aclPolicy: ObjectAclPolicy
   ): Promise<string> {
+    if (!isReplit) {
+      // Armazenamento local - não precisa de ACL
+      return rawPath;
+    }
+
     const normalizedPath = this.normalizeObjectEntityPath(rawPath);
     if (!normalizedPath.startsWith("/")) {
       return normalizedPath;
@@ -212,14 +295,33 @@ export class ObjectStorageService {
     requestedPermission,
   }: {
     userId?: string;
-    objectFile: File;
+    objectFile: any;
     requestedPermission?: ObjectPermission;
   }): Promise<boolean> {
+    if (!isReplit) {
+      // Armazenamento local - sempre permite (autenticação já foi feita)
+      return true;
+    }
+
     return canAccessObject({
       userId,
       objectFile,
       requestedPermission: requestedPermission ?? ObjectPermission.READ,
     });
+  }
+
+  // Novo método para salvar arquivo localmente
+  async saveLocalFile(buffer: Buffer, objectPath: string): Promise<void> {
+    const parts = objectPath.slice(1).split("/");
+    const entityId = parts.slice(1).join("/");
+    const localPath = path.join(this.getPrivateObjectDir(), entityId);
+    
+    const dir = path.dirname(localPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    
+    fs.writeFileSync(localPath, buffer);
   }
 }
 

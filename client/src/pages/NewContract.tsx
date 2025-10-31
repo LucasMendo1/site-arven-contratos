@@ -64,37 +64,62 @@ export default function NewContract() {
 
       const { uploadURL, objectPath } = await uploadResponse.json();
 
-      const uploadFileResponse = await fetch(uploadURL, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/pdf",
-        },
-        body: file,
-      });
+      // Detecta se está usando upload local (Docker) ou Replit Object Storage
+      if (uploadURL === "/api/upload/local") {
+        // Upload local usando FormData
+        const formData = new FormData();
+        formData.append('file', file);
 
-      if (!uploadFileResponse.ok) {
-        throw new Error("Falha ao fazer upload do arquivo");
+        const uploadFileResponse = await fetch(uploadURL, {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!uploadFileResponse.ok) {
+          throw new Error("Falha ao fazer upload do arquivo");
+        }
+
+        const { objectPath: finalObjectPath } = await uploadFileResponse.json();
+        setUploadedPdf(finalObjectPath);
+
+        toast({
+          title: "PDF enviado com sucesso",
+          description: "O arquivo foi carregado corretamente",
+        });
+      } else {
+        // Upload para Replit Object Storage
+        const uploadFileResponse = await fetch(uploadURL, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/pdf",
+          },
+          body: file,
+        });
+
+        if (!uploadFileResponse.ok) {
+          throw new Error("Falha ao fazer upload do arquivo");
+        }
+
+        const aclResponse = await fetch("/api/contracts/pdf", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ objectPath }),
+        });
+
+        if (!aclResponse.ok) {
+          throw new Error("Falha ao processar PDF");
+        }
+
+        const { pdfUrl: finalPdfUrl } = await aclResponse.json();
+        setUploadedPdf(finalPdfUrl);
+
+        toast({
+          title: "PDF enviado com sucesso",
+          description: "O arquivo foi carregado corretamente",
+        });
       }
-
-      const aclResponse = await fetch("/api/contracts/pdf", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ objectPath }),
-      });
-
-      if (!aclResponse.ok) {
-        throw new Error("Falha ao processar PDF");
-      }
-
-      const { pdfUrl: finalPdfUrl } = await aclResponse.json();
-      setUploadedPdf(finalPdfUrl);
-
-      toast({
-        title: "PDF enviado com sucesso",
-        description: "O arquivo foi carregado corretamente",
-      });
     } catch (error: any) {
       console.error("Upload error:", error);
       toast({
