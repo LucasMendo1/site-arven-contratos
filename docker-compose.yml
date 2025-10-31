@@ -1,0 +1,46 @@
+# docker-compose.yml - Sistema ARVEN
+version: '3.8'
+
+services:
+  arven:
+    build: .
+    container_name: arven-app
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      # Node
+      NODE_ENV: production
+      PORT: 5000
+      
+      # Session (TROQUE POR UMA STRING ALEATÓRIA!)
+      SESSION_SECRET: ${SESSION_SECRET}
+      
+      # Supabase (CONFIGURE AQUI!)
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      
+      # Object Storage (CONFIGURE CONFORME SUA ESCOLHA!)
+      DEFAULT_OBJECT_STORAGE_BUCKET_ID: ${DEFAULT_OBJECT_STORAGE_BUCKET_ID}
+      PRIVATE_OBJECT_DIR: ${PRIVATE_OBJECT_DIR}
+      PUBLIC_OBJECT_SEARCH_PATHS: ${PUBLIC_OBJECT_SEARCH_PATHS}
+    
+    volumes:
+      # Opcional: Se usar storage local, descomente a linha abaixo
+      # - ./uploads:/app/uploads
+      
+    networks:
+      - arven-network
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  arven-network:
+    driver: bridge

@@ -1,0 +1,37 @@
+# .dockerignore - Arquivos que não devem ir para o container
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Build
+client/dist/
+dist/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Misc
+*.md
+!README.md
+.replit
+replit.nix
