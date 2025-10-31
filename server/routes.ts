@@ -165,15 +165,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/objects/upload", isAuthenticated, async (req, res) => {
     try {
       const objectStorageService = new ObjectStorageService();
-      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      const { uploadURL, objectPath } = await objectStorageService.getObjectEntityUploadURL();
       
       console.log("[Upload URL] Generated:", uploadURL ? "Success" : "Failed");
+      console.log("[Object Path]:", objectPath);
       
       if (!uploadURL) {
         throw new Error("Upload URL is empty");
       }
       
-      res.json({ uploadURL });
+      res.json({ uploadURL, objectPath });
     } catch (error: any) {
       console.error("Get upload URL error:", error.message || error);
       res.status(500).json({ 
@@ -185,25 +186,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/contracts/pdf", isAuthenticated, async (req, res) => {
     try {
-      const { pdfUrl } = req.body;
+      const { objectPath } = req.body;
       
-      if (!pdfUrl) {
-        return res.status(400).json({ error: "PDF URL is required" });
+      console.log("[PDF Processing] Received objectPath:", objectPath);
+      
+      if (!objectPath) {
+        return res.status(400).json({ error: "Object path is required" });
       }
 
       const objectStorageService = new ObjectStorageService();
-      const objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
-        pdfUrl,
-        {
-          owner: "system",
-          visibility: "public",
+      
+      // Retry logic for race condition between upload and ACL setting
+      let retries = 3;
+      let finalPath = null;
+      
+      while (retries > 0 && !finalPath) {
+        try {
+          finalPath = await objectStorageService.trySetObjectEntityAclPolicy(
+            objectPath,
+            {
+              owner: "system",
+              visibility: "public",
+            }
+          );
+          console.log("[PDF Processing] ACL set successfully:", finalPath);
+        } catch (error: any) {
+          retries--;
+          if (retries > 0 && error.name === "ObjectNotFoundError") {
+            console.log(`[PDF Processing] Object not found, retrying... (${retries} attempts left)`);
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+          } else {
+            throw error;
+          }
         }
-      );
+      }
 
-      res.json({ pdfUrl: objectPath });
+      if (!finalPath) {
+        throw new Error("Failed to set ACL after retries");
+      }
+
+      res.json({ pdfUrl: finalPath });
     } catch (error: any) {
       console.error("Set PDF ACL error:", error);
-      res.status(500).json({ error: "Failed to process PDF" });
+      res.status(500).json({ error: "Failed to process PDF", details: error.message });
     }
   });
 
@@ -256,8 +281,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "User already exists" });
       }
 
-      const hashedPassword = await bcrypt.hash(password, 10);
-      const user = await storage.createUser({ email, password: hashedPassword });
+      // Create user - storage will hash the password
+      const user = await storage.createUser({ email, password });
 
       res.json({
         id: user.id,

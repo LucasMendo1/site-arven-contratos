@@ -62,7 +62,7 @@ export default function NewContract() {
         throw new Error("Falha ao obter URL de upload");
       }
 
-      const { uploadURL } = await uploadResponse.json();
+      const { uploadURL, objectPath } = await uploadResponse.json();
 
       const uploadFileResponse = await fetch(uploadURL, {
         method: "PUT",
@@ -76,14 +76,12 @@ export default function NewContract() {
         throw new Error("Falha ao fazer upload do arquivo");
       }
 
-      const pdfUrl = new URL(uploadURL).pathname;
-
       const aclResponse = await fetch("/api/contracts/pdf", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ pdfUrl }),
+        body: JSON.stringify({ objectPath }),
       });
 
       if (!aclResponse.ok) {
