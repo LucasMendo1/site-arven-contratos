@@ -412,7 +412,7 @@ export default function AdminDashboard() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => window.open(contract.pdfUrl, "_blank")}
+                              onClick={() => window.open(`/api/storage/${contract.pdfUrl}`, "_blank")}
                               data-testid={`button-download-${contract.id}`}
                             >
                               <Download className="w-4 h-4" />
@@ -526,7 +526,7 @@ export default function AdminDashboard() {
                 </div>
                 <div className="flex gap-3 pt-4">
                   <Button
-                    onClick={() => window.open(selectedContract.pdfUrl, "_blank")}
+                    onClick={() => window.open(`/api/storage/${selectedContract.pdfUrl}`, "_blank")}
                     className="flex-1"
                     data-testid="button-view-pdf"
                   >

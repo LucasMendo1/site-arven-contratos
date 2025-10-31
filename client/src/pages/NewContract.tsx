@@ -54,72 +54,27 @@ export default function NewContract() {
     try {
       setIsUploading(true);
 
-      const uploadResponse = await fetch("/api/objects/upload", {
+      // Upload direto para Supabase Storage
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const uploadResponse = await fetch("/api/upload/supabase", {
         method: "POST",
+        body: formData,
       });
 
       if (!uploadResponse.ok) {
-        throw new Error("Falha ao obter URL de upload");
+        const errorData = await uploadResponse.json();
+        throw new Error(errorData.details || "Falha ao fazer upload do arquivo");
       }
 
-      const { uploadURL, objectPath } = await uploadResponse.json();
+      const { objectPath } = await uploadResponse.json();
+      setUploadedPdf(objectPath);
 
-      // Detecta se está usando upload local (Docker) ou Replit Object Storage
-      if (uploadURL === "/api/upload/local") {
-        // Upload local usando FormData
-        const formData = new FormData();
-        formData.append('file', file);
-
-        const uploadFileResponse = await fetch(uploadURL, {
-          method: "POST",
-          body: formData,
-        });
-
-        if (!uploadFileResponse.ok) {
-          throw new Error("Falha ao fazer upload do arquivo");
-        }
-
-        const { objectPath: finalObjectPath } = await uploadFileResponse.json();
-        setUploadedPdf(finalObjectPath);
-
-        toast({
-          title: "PDF enviado com sucesso",
-          description: "O arquivo foi carregado corretamente",
-        });
-      } else {
-        // Upload para Replit Object Storage
-        const uploadFileResponse = await fetch(uploadURL, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/pdf",
-          },
-          body: file,
-        });
-
-        if (!uploadFileResponse.ok) {
-          throw new Error("Falha ao fazer upload do arquivo");
-        }
-
-        const aclResponse = await fetch("/api/contracts/pdf", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ objectPath }),
-        });
-
-        if (!aclResponse.ok) {
-          throw new Error("Falha ao processar PDF");
-        }
-
-        const { pdfUrl: finalPdfUrl } = await aclResponse.json();
-        setUploadedPdf(finalPdfUrl);
-
-        toast({
-          title: "PDF enviado com sucesso",
-          description: "O arquivo foi carregado corretamente",
-        });
-      }
+      toast({
+        title: "PDF enviado com sucesso",
+        description: "O arquivo foi salvo no Supabase Storage",
+      });
     } catch (error: any) {
       console.error("Upload error:", error);
       toast({

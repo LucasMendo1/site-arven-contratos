@@ -12,6 +12,7 @@ import MemoryStore from "memorystore";
 import bcrypt from "bcrypt";
 import multer from "multer";
 import { randomUUID } from "crypto";
+import { supabaseStorage } from "./supabaseStorage";
 
 // Extend express-session types
 declare module "express-session" {
@@ -199,27 +200,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Endpoint para upload local (usado no Docker)
-  app.post("/api/upload/local", isAuthenticated, upload.single('file'), async (req, res) => {
+  // Endpoint para upload no Supabase Storage
+  app.post("/api/upload/supabase", isAuthenticated, upload.single('file'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ error: "No file uploaded" });
       }
 
-      const objectStorageService = new ObjectStorageService();
-      const objectId = randomUUID();
-      const objectPath = `/objects/uploads/${objectId}`;
+      console.log("[Supabase Upload] Starting upload, file size:", req.file.size);
       
-      // Salva o arquivo localmente
-      await objectStorageService.saveLocalFile(req.file.buffer, objectPath);
+      // Upload para Supabase Storage
+      const filePath = await supabaseStorage.uploadPDF(req.file.buffer, req.file.originalname);
       
-      console.log("[Local Upload] File saved:", objectPath);
+      // Gera URL assinada (válida por 1 hora)
+      const signedUrl = await supabaseStorage.getSignedUrl(filePath, 3600);
       
-      res.json({ objectPath });
+      console.log("[Supabase Upload] File uploaded successfully:", filePath);
+      
+      // Retorna o path do arquivo (será salvo no banco)
+      res.json({ 
+        objectPath: filePath,
+        signedUrl: signedUrl // URL temporária para visualização
+      });
     } catch (error: any) {
-      console.error("Local upload error:", error.message || error);
+      console.error("Supabase upload error:", error.message || error);
       res.status(500).json({ 
-        error: "Failed to upload file",
+        error: "Failed to upload file to Supabase",
+        details: error.message 
+      });
+    }
+  });
+
+  // Endpoint para download de PDF do Supabase
+  app.get("/api/storage/:filePath(*)", isAuthenticated, async (req, res) => {
+    try {
+      const filePath = req.params.filePath;
+      console.log("[Download] Requesting file:", filePath);
+      
+      // Gera URL assinada temporária
+      const signedUrl = await supabaseStorage.getSignedUrl(filePath, 3600);
+      
+      // Redireciona para a URL assinada do Supabase
+      res.redirect(signedUrl);
+    } catch (error: any) {
+      console.error("Download error:", error.message || error);
+      res.status(404).json({ 
+        error: "File not found",
         details: error.message 
       });
     }

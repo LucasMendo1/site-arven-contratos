@@ -55,7 +55,8 @@ Sistema profissional de captura e gestão de contratos desenvolvido para ARVEN A
 - **Framework**: Express.js
 - **Autenticação**: Session-based com express-session
 - **Database**: Supabase (PostgreSQL)
-- **Storage**: Replit Object Storage (Google Cloud Storage)
+- **Storage**: Supabase Storage (persistente, CDN global)
+- **Upload**: Multer para processamento de arquivos
 - **Validação**: Zod schemas compartilhados
 
 ### Database Schema (Supabase)
@@ -102,10 +103,9 @@ webhook_config (
 - `POST /api/contracts` - Criar novo contrato (público)
 - `DELETE /api/contracts/:id` - Excluir contrato (autenticado)
 
-### Upload de PDFs
-- `POST /api/objects/upload` - Obter URL de upload
-- `POST /api/contracts/pdf` - Processar PDF após upload
-- `GET /objects/:objectPath` - Acessar PDF
+### Upload de PDFs (Supabase Storage)
+- `POST /api/upload/supabase` - Upload direto para Supabase Storage
+- `GET /api/storage/:filePath` - Download com URL assinada temporária
 
 ### Webhook
 - `GET /api/webhook` - Obter configuração (autenticado)
@@ -191,18 +191,20 @@ Quando um novo contrato é criado, o sistema envia automaticamente um webhook (s
 - **Senhas com Hash Bcrypt**: Todas as senhas são hashadas com bcrypt (10 rounds) antes de serem armazenadas
 - **Sessões Seguras**: HttpOnly cookies com expiração de 7 dias
 - **Row Level Security**: Habilitado no Supabase para todas as tabelas
-- **ACL Policy**: Controle de acesso aos PDFs via Object Storage
-- **Validação de Arquivos**: Apenas PDFs são aceitos no upload
+- **Supabase Storage Privado**: Bucket privado com políticas RLS
+- **URLs Assinadas**: PDFs acessíveis apenas via URLs temporárias (1 hora)
+- **Validação de Arquivos**: Apenas PDFs são aceitos no upload (10MB máx)
 - **CSRF Protection**: via express-session
 - **Autenticação Protegida**: Middleware isAuthenticated em rotas sensíveis
 
 ## Performance
 
-- Object Storage para PDFs (CDN-backed)
-- Cache de 1 hora para PDFs públicos
+- Supabase Storage com CDN global
+- URLs assinadas com cache de 1 hora
 - Queries otimizadas com índices
 - React Query para cache de dados
 - Loading states para melhor UX
+- Upload direto sem intermediários
 
 ## Responsividade
 
