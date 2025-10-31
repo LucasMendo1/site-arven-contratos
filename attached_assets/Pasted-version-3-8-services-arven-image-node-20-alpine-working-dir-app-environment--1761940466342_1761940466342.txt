@@ -1,0 +1,48 @@
+version: "3.8"
+
+services:
+  arven:
+    image: node:20-alpine
+    working_dir: /app
+    environment:
+      PORT: 5000
+      NODE_ENV: "production"
+      HOST: "0.0.0.0"
+      # ⚠️ Substitua abaixo pelas suas chaves REAIS (ideal rotacionar na Supabase)
+      SESSION_SECRET: 17260b93cd25323bc07cc5f5fbcd95ee56fe931e4e1fa7d5c8103de99d4c7325
+      SUPABASE_URL: https://msnzdzggmgkaiphuidrs.supabase.co
+      SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1zbnpkemdnbWdrYWlwaHVpZHJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE4Mjg5NzQsImV4cCI6MjA3NzQwNDk3NH0.ENV-b_0O4iPyDu32UI5JvgKNSrIVEmg91hCLQdGgcDo
+      SUPABASE_SERVICE_ROLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1zbnpkemdnbWdrYWlwaHVpZHJzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTgyODk3NCwiZXhwIjoyMDc3NDA0OTc0fQ.NwINEjJXZ7oYZHhCV8btzUNjGtnv1lC_-zR1MjRcOZs
+      DEFAULT_OBJECT_STORAGE_BUCKET_ID: "arven-contracts"
+      PRIVATE_OBJECT_DIR: "/tmp/uploads/private"
+      PUBLIC_OBJECT_SEARCH_PATHS: "/tmp/uploads/public"
+    command: >
+      sh -c "
+        rm -rf /app/* /app/.git &&
+        apk add --no-cache git &&
+        git clone https://github.com/LucasMendo1/site-arven-contratos.git /tmp/repo &&
+        cp -r /tmp/repo/* /tmp/repo/.* /app/ 2>/dev/null || cp -r /tmp/repo/* /app/ &&
+        rm -rf /tmp/repo &&
+        mkdir -p /tmp/uploads/private /tmp/uploads/public &&
+        npm install &&
+        npm run build &&
+        npm start
+      "
+    networks:
+      - proxy
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+      labels:
+        # 🧭 Configuração Traefik para domínio HTTPS
+        - "traefik.enable=true"
+        - "traefik.docker.network=proxy"
+        - "traefik.http.routers.arven.rule=Host(`contratos.arvenoficial.com`)"
+        - "traefik.http.routers.arven.entrypoints=websecure"
+        - "traefik.http.routers.arven.tls.certresolver=le"
+        - "traefik.http.services.arven.loadbalancer.server.port=5000"
+
+networks:
+  proxy:
+    external: true
