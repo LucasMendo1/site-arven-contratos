@@ -257,13 +257,16 @@ export default function NewContract() {
 
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="ticketValue">Valor do Ticket *</Label>
+              <Label htmlFor="ticketValue">Valor Total do Contrato *</Label>
               <Input
                 id="ticketValue"
-                placeholder="R$ 0,00"
+                placeholder="R$ 12.000,00"
                 {...form.register("ticketValue")}
                 data-testid="input-ticket-value"
               />
+              <p className="text-xs text-muted-foreground">
+                Digite o valor TOTAL do contrato (não o valor de cada parcela)
+              </p>
               {form.formState.errors.ticketValue && (
                 <p className="text-sm text-destructive">{form.formState.errors.ticketValue.message}</p>
               )}

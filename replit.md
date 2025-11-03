@@ -33,9 +33,11 @@ Sistema profissional de captura e gestão de contratos desenvolvido para ARVEN A
     - Telefone
     - Razão Social (empresa)
     - CPF/CNPJ
-    - Duração do Contrato
+    - Duração do Contrato (3 meses, 6 meses, 1 ano, 2 anos)
     - Produto
     - Valor do Ticket
+    - **Data de Início do Contrato** (permite importar contratos já em execução)
+    - **Frequência de Pagamento** (Mensal, Trimestral, Semestral, Anual, À Vista)
   - Upload seguro de PDF do contrato assinado
   - Validação de todos os campos obrigatórios
 - **Estatísticas**: Cards com métricas (total, contratos do mês, PDFs recebidos)
@@ -90,6 +92,8 @@ contracts (
   product TEXT NOT NULL,
   ticket_value TEXT NOT NULL,
   pdf_url TEXT NOT NULL,
+  start_date TIMESTAMP NOT NULL,
+  payment_frequency TEXT NOT NULL,
   submitted_at TIMESTAMP
 )
 
@@ -153,7 +157,13 @@ Quando um novo contrato é criado, o sistema envia automaticamente um webhook (s
 
 ### Migração de Banco de Dados
 
-⚠️ **IMPORTANTE**: Se você já tinha o sistema rodando antes da adição dos campos de Razão Social e CPF/CNPJ, execute o SQL em `supabase_add_company_fields.sql` no Supabase SQL Editor para adicionar as novas colunas à tabela de contratos.
+⚠️ **IMPORTANTE**: Execute as seguintes migrações SQL no Supabase SQL Editor (na ordem):
+
+1. **supabase_setup.sql** - Criação inicial das tabelas (apenas primeira instalação)
+2. **supabase_add_company_fields.sql** - Adiciona campos de Razão Social e CPF/CNPJ (se já tinha o sistema antes)
+3. **supabase_add_payment_and_date_fields.sql** - Adiciona campos de Data de Início e Frequência de Pagamento (NOVA MIGRATION - OBRIGATÓRIA)
+
+⚠️ **CRÍTICO**: Execute `supabase_add_payment_and_date_fields.sql` ANTES de fazer deploy do código atualizado, caso contrário o sistema falhará ao criar novos contratos!
 
 ## Identidade Visual ARVEN
 
@@ -232,9 +242,34 @@ O sistema calcula automaticamente o status de cada contrato:
 - **Expirado** (Vermelho): Data de expiração já passou
 
 Cálculo de expiração:
-- Data de início: `submitted_at` (data de envio do contrato)
+- Data de início: `start_date` (data real de início do contrato)
 - Duração: 3 meses, 6 meses, 1 ano ou 2 anos
 - Data de expiração: Data de início + duração do contrato
+
+## Cálculo de MRR (Monthly Recurring Revenue)
+
+O MRR é calculado normalizando o valor total do contrato pela duração em meses:
+- **MRR = Valor Total do Contrato / Duração em Meses**
+- A frequência de pagamento não afeta o MRR normalizado
+- **IMPORTANTE**: `ticketValue` deve SEMPRE ser o **valor TOTAL do contrato** (não o valor de cada parcela)
+- O formulário de criação de contratos deixa isso explícito no label e no helper text
+
+Exemplos corretos:
+- Contrato de R$ 12.000 por 1 ano (12 meses): MRR = R$ 1.000
+- Contrato de R$ 6.000 por 6 meses: MRR = R$ 1.000
+- Independente se pago mensal, trimestral, semestral ou à vista
+
+❌ Exemplo ERRADO:
+- Inserir R$ 1.000 (valor mensal) para contrato de 12 meses → MRR calculado incorretamente como R$ 83,33
+- SEMPRE insira o valor total: R$ 12.000
+
+## Frequências de Pagamento
+
+- **Mensal**: 12 pagamentos por ano
+- **Trimestral**: 4 pagamentos por ano
+- **Semestral**: 2 pagamentos por ano
+- **Anual**: 1 pagamento por ano
+- **À Vista**: Pagamento único no início
 
 ## Próximos Passos (Futuras Melhorias)
 
