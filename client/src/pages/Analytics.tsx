@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, TrendingUp, DollarSign, Calendar, Users, ArrowUpRight, ArrowDownRight } from "lucide-react";
-import { format, startOfMonth, endOfMonth, subMonths, parseISO } from "date-fns";
+import { Loader2, TrendingUp, DollarSign, Calendar, Users, ArrowUpRight, ArrowDownRight, Filter } from "lucide-react";
+import { format, startOfMonth, endOfMonth, subMonths, parseISO, differenceInMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   LineChart,
@@ -70,7 +72,11 @@ const calculateMRR = (ticketValue: number, duration: number, paymentFrequency: s
 const COLORS = ["#1a2332", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
 
 export default function Analytics() {
-  const { data: contracts = [], isLoading } = useQuery<Contract[]>({
+  const [periodFilter, setPeriodFilter] = useState<string>("6_months");
+  const [productFilter, setProductFilter] = useState<string>("all");
+  const [durationFilter, setDurationFilter] = useState<string>("all");
+
+  const { data: allContracts = [], isLoading } = useQuery<Contract[]>({
     queryKey: ["/api/contracts"],
     refetchOnMount: true,
   });
@@ -83,35 +89,83 @@ export default function Analytics() {
     );
   }
 
+  // Aplicar filtros
+  const filteredContracts = allContracts.filter((contract) => {
+    // Filtro de produto
+    if (productFilter !== "all" && contract.product !== productFilter) {
+      return false;
+    }
+
+    // Filtro de duração
+    if (durationFilter !== "all" && contract.contractDuration !== durationFilter) {
+      return false;
+    }
+
+    // Filtro de período (baseado em startDate)
+    if (periodFilter !== "all") {
+      const contractDate = parseISO(contract.startDate);
+      const now = new Date();
+      const monthsAgo = {
+        "1_month": 1,
+        "3_months": 3,
+        "6_months": 6,
+        "1_year": 12,
+        "2_years": 24,
+      }[periodFilter];
+
+      if (monthsAgo) {
+        const cutoffDate = subMonths(now, monthsAgo);
+        if (contractDate < cutoffDate) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  });
+
   // Calcular métricas
-  const totalContracts = contracts.length;
+  const totalContracts = filteredContracts.length;
   
   // Faturamento total
-  const totalRevenue = contracts.reduce((sum, contract) => {
+  const totalRevenue = filteredContracts.reduce((sum, contract) => {
     return sum + parseTicketValue(contract.ticketValue);
   }, 0);
 
   // MRR (Monthly Recurring Revenue)
-  const mrr = contracts.reduce((sum, contract) => {
+  const mrr = filteredContracts.reduce((sum, contract) => {
     const ticketValue = parseTicketValue(contract.ticketValue);
     const duration = durationMonths[contract.contractDuration] || 12;
     return sum + calculateMRR(ticketValue, duration, contract.paymentFrequency);
   }, 0);
 
-  // Contratos por mês (últimos 6 meses)
-  const last6Months = Array.from({ length: 6 }, (_, i) => {
-    const date = subMonths(new Date(), 5 - i);
-    return {
-      month: format(date, "MMM/yy", { locale: ptBR }),
-      date: date,
-    };
-  });
+  // Contratos por mês (dinâmico baseado no filtro)
+  const getMonthsForPeriod = () => {
+    const monthsCount = {
+      "1_month": 1,
+      "3_months": 3,
+      "6_months": 6,
+      "1_year": 12,
+      "2_years": 24,
+      "all": 12, // Se "all", mostra últimos 12 meses por padrão
+    }[periodFilter] || 6;
 
-  const contractsByMonth = last6Months.map(({ month, date }) => {
+    return Array.from({ length: monthsCount }, (_, i) => {
+      const date = subMonths(new Date(), monthsCount - 1 - i);
+      return {
+        month: format(date, "MMM/yy", { locale: ptBR }),
+        date: date,
+      };
+    });
+  };
+
+  const monthsToDisplay = getMonthsForPeriod();
+
+  const contractsByMonth = monthsToDisplay.map(({ month, date }) => {
     const monthStart = startOfMonth(date);
     const monthEnd = endOfMonth(date);
     
-    const monthContracts = contracts.filter((contract) => {
+    const monthContracts = filteredContracts.filter((contract) => {
       const contractDate = parseISO(contract.startDate);
       return contractDate >= monthStart && contractDate <= monthEnd;
     });
@@ -135,7 +189,7 @@ export default function Analytics() {
   });
 
   // Contratos por produto
-  const productStats = contracts.reduce((acc, contract) => {
+  const productStats = filteredContracts.reduce((acc, contract) => {
     const product = contract.product || "Outros";
     if (!acc[product]) {
       acc[product] = { count: 0, revenue: 0 };
@@ -152,7 +206,7 @@ export default function Analytics() {
   }));
 
   // Contratos por duração
-  const durationStats = contracts.reduce((acc, contract) => {
+  const durationStats = filteredContracts.reduce((acc, contract) => {
     const duration = contract.contractDuration;
     const label = {
       "3_months": "3 Meses",
@@ -182,6 +236,9 @@ export default function Analytics() {
   // Ticket médio
   const averageTicket = totalContracts > 0 ? totalRevenue / totalContracts : 0;
 
+  // Obter lista de produtos únicos
+  const uniqueProducts = Array.from(new Set(allContracts.map(c => c.product)));
+
   return (
     <div className="space-y-6">
       <div>
@@ -190,6 +247,73 @@ export default function Analytics() {
           Visão completa do desempenho do negócio e métricas financeiras
         </p>
       </div>
+
+      {/* Filtros */}
+      <Card className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Filter className="w-5 h-5 text-primary" />
+          <h3 className="text-lg font-semibold">Filtros</h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Período</label>
+            <Select value={periodFilter} onValueChange={setPeriodFilter}>
+              <SelectTrigger data-testid="select-period-filter">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1_month">Último mês</SelectItem>
+                <SelectItem value="3_months">Últimos 3 meses</SelectItem>
+                <SelectItem value="6_months">Últimos 6 meses</SelectItem>
+                <SelectItem value="1_year">Último ano</SelectItem>
+                <SelectItem value="2_years">Últimos 2 anos</SelectItem>
+                <SelectItem value="all">Todo o período</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Produto</label>
+            <Select value={productFilter} onValueChange={setProductFilter}>
+              <SelectTrigger data-testid="select-product-filter">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os produtos</SelectItem>
+                {uniqueProducts.map((product) => (
+                  <SelectItem key={product} value={product}>
+                    {product}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Duração</label>
+            <Select value={durationFilter} onValueChange={setDurationFilter}>
+              <SelectTrigger data-testid="select-duration-filter">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as durações</SelectItem>
+                <SelectItem value="3_months">3 Meses</SelectItem>
+                <SelectItem value="6_months">6 Meses</SelectItem>
+                <SelectItem value="1_year">1 Ano</SelectItem>
+                <SelectItem value="2_years">2 Anos</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {filteredContracts.length < allContracts.length && (
+          <div className="mt-4 p-3 rounded-lg bg-blue-50 border border-blue-200">
+            <p className="text-sm text-blue-700">
+              Exibindo {filteredContracts.length} de {allContracts.length} contratos
+            </p>
+          </div>
+        )}
+      </Card>
 
       {/* Cards de Métricas Principais */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
