@@ -32,6 +32,8 @@ type Contract = {
   ticketValue: string;
   pdfUrl: string;
   submittedAt: string;
+  startDate: string;
+  paymentFrequency: string;
 };
 
 const durationMonths: Record<string, number> = {
@@ -43,6 +45,26 @@ const durationMonths: Record<string, number> = {
 
 const parseTicketValue = (value: string): number => {
   return parseFloat(value.replace(/[^\d,]/g, "").replace(",", ".")) || 0;
+};
+
+// Calcula MRR baseado na frequência de pagamento
+// Se ticketValue é o valor TOTAL do contrato: MRR = total / duração
+// Se ticketValue é o valor de CADA PARCELA: MRR depende da frequência
+const calculateMRR = (ticketValue: number, duration: number, paymentFrequency: string): number => {
+  // Assumindo que ticketValue é o valor TOTAL do contrato
+  // MRR normalizado = valor total / duração em meses
+  // (independente da frequência de pagamento)
+  return ticketValue / duration;
+  
+  // Se ticketValue fosse o valor de cada parcela, usaríamos:
+  // switch (paymentFrequency) {
+  //   case "monthly": return ticketValue;
+  //   case "quarterly": return ticketValue / 3;
+  //   case "biannual": return ticketValue / 6;
+  //   case "annual": return ticketValue / 12;
+  //   case "one_time": return ticketValue / duration;
+  //   default: return ticketValue / duration;
+  // }
 };
 
 const COLORS = ["#1a2332", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
@@ -72,7 +94,7 @@ export default function Analytics() {
   const mrr = contracts.reduce((sum, contract) => {
     const ticketValue = parseTicketValue(contract.ticketValue);
     const duration = durationMonths[contract.contractDuration] || 12;
-    return sum + (ticketValue / duration);
+    return sum + calculateMRR(ticketValue, duration, contract.paymentFrequency);
   }, 0);
 
   // Contratos por mês (últimos 6 meses)
@@ -100,7 +122,7 @@ export default function Analytics() {
     const monthMrr = monthContracts.reduce((sum, contract) => {
       const ticketValue = parseTicketValue(contract.ticketValue);
       const duration = durationMonths[contract.contractDuration] || 12;
-      return sum + (ticketValue / duration);
+      return sum + calculateMRR(ticketValue, duration, contract.paymentFrequency);
     }, 0);
 
     return {

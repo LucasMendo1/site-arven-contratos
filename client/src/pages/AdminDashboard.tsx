@@ -69,14 +69,14 @@ const durationMonths: Record<string, number> = {
   "2_years": 24,
 };
 
-function getContractStatus(submittedAt: string, duration: string): {
+function getContractStatus(startDate: string, duration: string): {
   status: "active" | "expiring" | "expired";
   daysRemaining: number;
   expirationDate: Date;
 } {
-  const startDate = new Date(submittedAt);
+  const contractStartDate = new Date(startDate);
   const months = durationMonths[duration] || 12;
-  const expirationDate = new Date(startDate);
+  const expirationDate = new Date(contractStartDate);
   expirationDate.setMonth(expirationDate.getMonth() + months);
   
   const now = new Date();
@@ -142,7 +142,7 @@ export default function AdminDashboard() {
   );
 
   const activeContracts = contracts.filter((contract) => {
-    const { status } = getContractStatus(contract.submittedAt, contract.contractDuration);
+    const { status } = getContractStatus(contract.startDate, contract.contractDuration);
     return status === "active" || status === "expiring";
   });
 
@@ -377,7 +377,7 @@ export default function AdminDashboard() {
                   <TableBody>
                     {displayedContracts.map((contract) => {
                       const { status, daysRemaining, expirationDate } = getContractStatus(
-                        contract.submittedAt,
+                        contract.startDate,
                         contract.contractDuration
                       );
                       
@@ -476,7 +476,7 @@ export default function AdminDashboard() {
           </DialogHeader>
           {selectedContract && (() => {
             const { status, daysRemaining, expirationDate } = getContractStatus(
-              selectedContract.submittedAt,
+              selectedContract.startDate,
               selectedContract.contractDuration
             );
             
