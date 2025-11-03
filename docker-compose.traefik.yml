@@ -1,0 +1,123 @@
+# docker-compose.yml - Sistema ARVEN com Traefik e HTTPS Automático
+# Este arquivo configura:
+# - Traefik como reverse proxy
+# - SSL/HTTPS automático via Let's Encrypt
+# - Renovação automática de certificados
+# - Redirect automático HTTP -> HTTPS
+
+version: '3.8'
+
+services:
+  # Traefik - Reverse Proxy com SSL Automático
+  traefik:
+    image: traefik:v2.10
+    container_name: arven-traefik
+    restart: unless-stopped
+    command:
+      # Dashboard do Traefik (opcional - desabilite em produção)
+      - "--api.dashboard=true"
+      - "--api.insecure=false"
+      
+      # Docker provider
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      
+      # Entrypoints (portas)
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      
+      # Redirect HTTP -> HTTPS
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      
+      # Let's Encrypt (SSL Automático)
+      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      
+      # Logs
+      - "--log.level=INFO"
+      - "--accesslog=true"
+    
+    ports:
+      - "80:80"      # HTTP
+      - "443:443"    # HTTPS
+      - "8080:8080"  # Dashboard (opcional - remova em produção)
+    
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./letsencrypt:/letsencrypt"
+    
+    networks:
+      - arven-network
+    
+    labels:
+      # Dashboard do Traefik (opcional)
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.${DOMAIN}`)"
+      - "traefik.http.routers.traefik.entrypoints=websecure"
+      - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.traefik.service=api@internal"
+      # Autenticação básica para dashboard (opcional)
+      # Gere com: htpasswd -nb admin senha-forte
+      - "traefik.http.routers.traefik.middlewares=auth"
+      - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_AUTH:-admin:$$apr1$$8EVjn/nj$$GiLUZqcbueTFeD23SuB6x0}"
+
+  # Aplicação ARVEN
+  arven:
+    build: .
+    container_name: arven-app
+    restart: unless-stopped
+    environment:
+      # Node
+      NODE_ENV: production
+      PORT: 5000
+      
+      # Session
+      SESSION_SECRET: ${SESSION_SECRET}
+      
+      # Supabase
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      
+      # Object Storage
+      DEFAULT_OBJECT_STORAGE_BUCKET_ID: ${DEFAULT_OBJECT_STORAGE_BUCKET_ID}
+      PRIVATE_OBJECT_DIR: ${PRIVATE_OBJECT_DIR}
+      PUBLIC_OBJECT_SEARCH_PATHS: ${PUBLIC_OBJECT_SEARCH_PATHS}
+    
+    networks:
+      - arven-network
+    
+    labels:
+      # Habilitar Traefik
+      - "traefik.enable=true"
+      
+      # Roteamento HTTP
+      - "traefik.http.routers.arven.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.arven.entrypoints=websecure"
+      - "traefik.http.routers.arven.tls=true"
+      - "traefik.http.routers.arven.tls.certresolver=letsencrypt"
+      
+      # Configuração do serviço
+      - "traefik.http.services.arven.loadbalancer.server.port=5000"
+      
+      # Headers de segurança
+      - "traefik.http.middlewares.arven-headers.headers.sslredirect=true"
+      - "traefik.http.middlewares.arven-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.arven-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.arven-headers.headers.stsPreload=true"
+      - "traefik.http.routers.arven.middlewares=arven-headers"
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  arven-network:
+    driver: bridge
