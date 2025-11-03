@@ -47,7 +47,7 @@ export const insertContractSchema = createInsertSchema(contracts).omit({
   product: z.string().min(2, "Por favor, selecione um produto"),
   ticketValue: z.string().min(1, "Valor do ticket é obrigatório"),
   pdfUrl: z.string().min(1, "PDF é obrigatório"),
-  startDate: z.string().min(1, "Data de início é obrigatória"),
+  startDate: z.string().min(1, "Data de início é obrigatória").transform((val) => new Date(val)),
   paymentFrequency: z.enum(["monthly", "quarterly", "biannual", "annual", "one_time"]),
 });
 
