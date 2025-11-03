@@ -6,13 +6,7 @@ Sistema profissional de captura e gestão de contratos desenvolvido para ARVEN A
 
 ## Funcionalidades Implementadas
 
-### Landing Page (/)
-- **Página Pública**: Página informativa sobre o sistema
-- **Acesso Restrito**: Informa que apenas usuários autorizados podem acessar
-- **Botão de Login**: Redireciona para área administrativa
-- **Design ARVEN**: Interface profissional seguindo cores da marca (azul navy #1a2332)
-
-### Login Administrativo (/login)
+### Login Administrativo (/ e /login)
 - Autenticação via Supabase
 - Sistema de sessões persistente
 - Toggle de visualização de senha
@@ -176,14 +170,8 @@ Quando um novo contrato é criado, o sistema envia automaticamente um webhook (s
 
 ## Fluxo de Usuário
 
-### Visitante (Landing Page)
-1. Acessa a landing page (/)
-2. Vê página informativa sobre o sistema ARVEN
-3. É informado que o acesso é restrito
-4. Clica em "Acessar Sistema" para ir ao login
-
 ### Admin (Dashboard)
-1. Acessa /login
+1. Acessa / ou /login
 2. Faz login com credenciais (admin@arven.com / admin123)
 3. É redirecionado para /admin
 4. **Pode criar novos contratos**:
