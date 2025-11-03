@@ -50,6 +50,7 @@ export default function WebhookSettings() {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: 'include',
         body: JSON.stringify({
           url: webhookUrl,
           isActive: isActive ? "true" : "false",

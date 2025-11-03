@@ -69,6 +69,7 @@ export default function NewContract() {
       const uploadResponse = await fetch("/api/upload/supabase", {
         method: "POST",
         body: formData,
+        credentials: 'include',
       });
 
       if (!uploadResponse.ok) {
@@ -113,6 +114,7 @@ export default function NewContract() {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: 'include',
         body: JSON.stringify({
           ...data,
           pdfUrl: uploadedPdf,
