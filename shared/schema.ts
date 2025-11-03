@@ -30,6 +30,8 @@ export const contracts = pgTable("contracts", {
   product: text("product").notNull(),
   ticketValue: text("ticket_value").notNull(),
   pdfUrl: text("pdf_url").notNull(),
+  startDate: timestamp("start_date").notNull(),
+  paymentFrequency: text("payment_frequency").notNull(),
   submittedAt: timestamp("submitted_at").defaultNow().notNull(),
 });
 
@@ -45,6 +47,8 @@ export const insertContractSchema = createInsertSchema(contracts).omit({
   product: z.string().min(2, "Por favor, selecione um produto"),
   ticketValue: z.string().min(1, "Valor do ticket é obrigatório"),
   pdfUrl: z.string().min(1, "PDF é obrigatório"),
+  startDate: z.string().min(1, "Data de início é obrigatória"),
+  paymentFrequency: z.enum(["monthly", "quarterly", "biannual", "annual", "one_time"]),
 });
 
 export type InsertContract = z.infer<typeof insertContractSchema>;

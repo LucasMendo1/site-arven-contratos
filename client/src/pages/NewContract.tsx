@@ -19,6 +19,8 @@ const contractSchema = z.object({
   contractDuration: z.string().min(1, "Selecione a duração"),
   product: z.string().min(1, "Selecione um produto"),
   ticketValue: z.string().min(1, "Digite o valor do ticket"),
+  startDate: z.string().min(1, "Selecione a data de início"),
+  paymentFrequency: z.string().min(1, "Selecione a frequência de pagamento"),
 });
 
 type ContractForm = z.infer<typeof contractSchema>;
@@ -39,6 +41,8 @@ export default function NewContract() {
       contractDuration: "",
       product: "",
       ticketValue: "",
+      startDate: "",
+      paymentFrequency: "",
     },
   });
 
@@ -251,16 +255,53 @@ export default function NewContract() {
             </div>
           </div>
 
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="ticketValue">Valor do Ticket *</Label>
+              <Input
+                id="ticketValue"
+                placeholder="R$ 0,00"
+                {...form.register("ticketValue")}
+                data-testid="input-ticket-value"
+              />
+              {form.formState.errors.ticketValue && (
+                <p className="text-sm text-destructive">{form.formState.errors.ticketValue.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="paymentFrequency">Frequência de Pagamento *</Label>
+              <Select
+                value={form.watch("paymentFrequency")}
+                onValueChange={(value) => form.setValue("paymentFrequency", value)}
+              >
+                <SelectTrigger data-testid="select-payment-frequency">
+                  <SelectValue placeholder="Selecione a frequência" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="monthly">Mensal (12x/ano)</SelectItem>
+                  <SelectItem value="quarterly">Trimestral (4x/ano)</SelectItem>
+                  <SelectItem value="biannual">Semestral (2x/ano)</SelectItem>
+                  <SelectItem value="annual">Anual (1x/ano)</SelectItem>
+                  <SelectItem value="one_time">À Vista (Pagamento Único)</SelectItem>
+                </SelectContent>
+              </Select>
+              {form.formState.errors.paymentFrequency && (
+                <p className="text-sm text-destructive">{form.formState.errors.paymentFrequency.message}</p>
+              )}
+            </div>
+          </div>
+
           <div className="space-y-2">
-            <Label htmlFor="ticketValue">Valor do Ticket *</Label>
+            <Label htmlFor="startDate">Data de Início do Contrato *</Label>
             <Input
-              id="ticketValue"
-              placeholder="R$ 0,00"
-              {...form.register("ticketValue")}
-              data-testid="input-ticket-value"
+              id="startDate"
+              type="date"
+              {...form.register("startDate")}
+              data-testid="input-start-date"
             />
-            {form.formState.errors.ticketValue && (
-              <p className="text-sm text-destructive">{form.formState.errors.ticketValue.message}</p>
+            {form.formState.errors.startDate && (
+              <p className="text-sm text-destructive">{form.formState.errors.startDate.message}</p>
             )}
           </div>
 
