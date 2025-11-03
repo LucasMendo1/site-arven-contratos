@@ -53,6 +53,8 @@ type Contract = {
   ticketValue: string;
   pdfUrl: string;
   submittedAt: string;
+  startDate: string;
+  paymentFrequency: string;
 };
 
 const durationLabels: Record<string, string> = {
@@ -511,8 +513,24 @@ export default function AdminDashboard() {
                   <p className="text-lg font-semibold text-primary">{selectedContract.ticketValue}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Data de Início</p>
+                  <p className="text-sm font-medium text-muted-foreground">Frequência de Pagamento</p>
                   <p className="text-lg">
+                    {selectedContract.paymentFrequency === "monthly" && "Mensal (12x/ano)"}
+                    {selectedContract.paymentFrequency === "quarterly" && "Trimestral (4x/ano)"}
+                    {selectedContract.paymentFrequency === "biannual" && "Semestral (2x/ano)"}
+                    {selectedContract.paymentFrequency === "annual" && "Anual (1x/ano)"}
+                    {selectedContract.paymentFrequency === "one_time" && "À Vista (Pagamento Único)"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Data de Início do Contrato</p>
+                  <p className="text-lg">
+                    {format(new Date(selectedContract.startDate), "dd/MM/yyyy", { locale: ptBR })}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Cadastrado no Sistema</p>
+                  <p className="text-lg text-muted-foreground">
                     {format(new Date(selectedContract.submittedAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                   </p>
                 </div>
