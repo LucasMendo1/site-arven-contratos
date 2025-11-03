@@ -44,6 +44,8 @@ type Contract = {
   id: string;
   clientName: string;
   clientPhone: string;
+  companyName: string;
+  document: string;
   contractDuration: string;
   product: string;
   ticketValue: string;
@@ -470,6 +472,14 @@ export default function AdminDashboard() {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Telefone</p>
                   <p className="text-lg">{selectedContract.clientPhone}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Razão Social</p>
+                  <p className="text-lg">{selectedContract.companyName}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">CPF/CNPJ</p>
+                  <p className="text-lg">{selectedContract.document}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Produto</p>

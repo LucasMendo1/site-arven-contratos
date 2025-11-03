@@ -26,7 +26,14 @@ Sistema profissional de captura e gestão de contratos desenvolvido para ARVEN A
   - **Webhook**: Configuração de notificações automáticas
 - **Criação de Contratos (PRIVADO)**:
   - Apenas admins logados podem criar contratos
-  - Formulário completo com validação
+  - Formulário completo com validação:
+    - Nome do Cliente
+    - Telefone
+    - Razão Social (empresa)
+    - CPF/CNPJ
+    - Duração do Contrato
+    - Produto
+    - Valor do Ticket
   - Upload seguro de PDF do contrato assinado
   - Validação de todos os campos obrigatórios
 - **Estatísticas**: Cards com métricas (total, contratos do mês, PDFs recebidos)
@@ -75,6 +82,8 @@ contracts (
   id UUID PRIMARY KEY,
   client_name TEXT NOT NULL,
   client_phone TEXT NOT NULL,
+  company_name TEXT NOT NULL,
+  document TEXT NOT NULL,
   contract_duration TEXT NOT NULL,
   product TEXT NOT NULL,
   ticket_value TEXT NOT NULL,
@@ -139,6 +148,10 @@ Quando um novo contrato é criado, o sistema envia automaticamente um webhook (s
 - **Senha**: admin123
 
 ⚠️ Execute o SQL em `supabase_setup.sql` no Supabase SQL Editor para criar as tabelas.
+
+### Migração de Banco de Dados
+
+⚠️ **IMPORTANTE**: Se você já tinha o sistema rodando antes da adição dos campos de Razão Social e CPF/CNPJ, execute o SQL em `supabase_add_company_fields.sql` no Supabase SQL Editor para adicionar as novas colunas à tabela de contratos.
 
 ## Identidade Visual ARVEN
 

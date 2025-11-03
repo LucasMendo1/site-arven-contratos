@@ -14,6 +14,8 @@ import { queryClient } from "@/lib/queryClient";
 const contractSchema = z.object({
   clientName: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
   clientPhone: z.string().min(10, "Telefone inválido"),
+  companyName: z.string().min(3, "Razão Social deve ter pelo menos 3 caracteres"),
+  document: z.string().min(11, "CPF/CNPJ inválido"),
   contractDuration: z.string().min(1, "Selecione a duração"),
   product: z.string().min(1, "Selecione um produto"),
   ticketValue: z.string().min(1, "Digite o valor do ticket"),
@@ -32,6 +34,8 @@ export default function NewContract() {
     defaultValues: {
       clientName: "",
       clientPhone: "",
+      companyName: "",
+      document: "",
       contractDuration: "",
       product: "",
       ticketValue: "",
@@ -170,6 +174,34 @@ export default function NewContract() {
               />
               {form.formState.errors.clientPhone && (
                 <p className="text-sm text-destructive">{form.formState.errors.clientPhone.message}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="companyName">Razão Social *</Label>
+              <Input
+                id="companyName"
+                placeholder="Ex: Empresa Ltda"
+                {...form.register("companyName")}
+                data-testid="input-company-name"
+              />
+              {form.formState.errors.companyName && (
+                <p className="text-sm text-destructive">{form.formState.errors.companyName.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="document">CPF/CNPJ *</Label>
+              <Input
+                id="document"
+                placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                {...form.register("document")}
+                data-testid="input-document"
+              />
+              {form.formState.errors.document && (
+                <p className="text-sm text-destructive">{form.formState.errors.document.message}</p>
               )}
             </div>
           </div>

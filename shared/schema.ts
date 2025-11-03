@@ -24,6 +24,8 @@ export const contracts = pgTable("contracts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   clientName: text("client_name").notNull(),
   clientPhone: text("client_phone").notNull(),
+  companyName: text("company_name").notNull(),
+  document: text("document").notNull(),
   contractDuration: text("contract_duration").notNull(),
   product: text("product").notNull(),
   ticketValue: text("ticket_value").notNull(),
@@ -37,6 +39,8 @@ export const insertContractSchema = createInsertSchema(contracts).omit({
 }).extend({
   clientName: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
   clientPhone: z.string().min(10, "Número de telefone inválido"),
+  companyName: z.string().min(3, "Razão Social deve ter pelo menos 3 caracteres"),
+  document: z.string().min(11, "CPF/CNPJ inválido"),
   contractDuration: z.enum(["3_months", "6_months", "1_year", "2_years"]),
   product: z.string().min(2, "Por favor, selecione um produto"),
   ticketValue: z.string().min(1, "Valor do ticket é obrigatório"),

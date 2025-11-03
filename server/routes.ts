@@ -146,10 +146,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(contract);
     } catch (error: any) {
       console.error("Create contract error:", error);
+      
       if (error.name === "ZodError") {
         return res.status(400).json({ error: "Invalid contract data", details: error.errors });
       }
-      res.status(500).json({ error: "Internal server error" });
+      
+      // Check if error is related to missing database columns (migration not executed)
+      if (error.message && (error.message.includes("company_name") || error.message.includes("document"))) {
+        return res.status(500).json({ 
+          error: "Database migration required",
+          message: "Please execute the SQL migration in supabase_add_company_fields.sql to add the required columns to the database.",
+          details: error.message
+        });
+      }
+      
+      res.status(500).json({ error: "Internal server error", message: error.message });
     }
   });
 

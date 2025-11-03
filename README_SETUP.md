@@ -4,6 +4,8 @@
 
 ### 1. Configuração do Supabase
 
+#### Setup Inicial (Novo Projeto)
+
 1. Acesse [Supabase Dashboard](https://supabase.com/dashboard)
 2. Vá para o **SQL Editor**
 3. Execute o arquivo `supabase_setup.sql` completo
@@ -12,6 +14,23 @@
    - Tabela `contracts` (contratos enviados)
    - Tabela `webhook_config` (configuração de webhook)
    - Um usuário admin inicial
+5. **DEPOIS**, execute o arquivo `supabase_add_company_fields.sql` para adicionar os campos adicionais:
+   - Campo `company_name` (Razão Social)
+   - Campo `document` (CPF/CNPJ)
+
+#### ⚠️ Migração Obrigatória (Se já tinha o sistema rodando)
+
+Se você já tinha o sistema funcionando antes de 03/11/2025, **você DEVE executar a migração do banco de dados**:
+
+1. Acesse [Supabase Dashboard](https://supabase.com/dashboard)
+2. Vá para o **SQL Editor**
+3. Abra o arquivo `supabase_add_company_fields.sql` neste projeto
+4. Copie todo o conteúdo do arquivo
+5. Cole no SQL Editor do Supabase
+6. Clique em **Run** (ou pressione Ctrl+Enter)
+7. Aguarde a confirmação de sucesso
+
+**Sem esta migração, o sistema irá falhar ao criar novos contratos!**
 
 ### 2. Credenciais Padrão
 
