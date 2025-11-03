@@ -167,7 +167,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/contracts/:id", isAuthenticated, async (req, res) => {
     try {
       const { id } = req.params;
+      
+      // Buscar o contrato para obter o pdfUrl
+      const contracts = await storage.getAllContracts();
+      const contract = contracts.find(c => c.id === id);
+      
+      if (!contract) {
+        return res.status(404).json({ error: "Contract not found" });
+      }
+      
+      // Deletar o PDF do Supabase Storage (se existir)
+      if (contract.pdfUrl) {
+        try {
+          console.log(`🗑️ Deleting PDF from Supabase: ${contract.pdfUrl}`);
+          await supabaseStorage.deletePDF(contract.pdfUrl);
+          console.log(`✅ PDF deleted successfully: ${contract.pdfUrl}`);
+        } catch (pdfError: any) {
+          console.error("Error deleting PDF from storage:", pdfError);
+          // Continuar mesmo se o PDF não puder ser deletado
+          // (pode já ter sido deletado ou não existir)
+        }
+      }
+      
+      // Deletar o registro do banco de dados
       await storage.deleteContract(id);
+      
       res.json({ success: true });
     } catch (error: any) {
       console.error("Delete contract error:", error);
