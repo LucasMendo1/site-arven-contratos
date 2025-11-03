@@ -72,6 +72,7 @@ const COLORS = ["#1a2332", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"
 export default function Analytics() {
   const { data: contracts = [], isLoading } = useQuery<Contract[]>({
     queryKey: ["/api/contracts"],
+    refetchOnMount: true,
   });
 
   if (isLoading) {

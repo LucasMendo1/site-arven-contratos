@@ -25,7 +25,11 @@ const contractSchema = z.object({
 
 type ContractForm = z.infer<typeof contractSchema>;
 
-export default function NewContract() {
+interface NewContractProps {
+  onContractCreated?: () => void;
+}
+
+export default function NewContract({ onContractCreated }: NewContractProps = {}) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadedPdf, setUploadedPdf] = useState<string | null>(null);
@@ -134,6 +138,11 @@ export default function NewContract() {
 
       form.reset();
       setUploadedPdf(null);
+      
+      // Redirecionar para Analytics após criar o contrato
+      if (onContractCreated) {
+        setTimeout(() => onContractCreated(), 500);
+      }
     } catch (error: any) {
       toast({
         title: "Erro ao criar contrato",

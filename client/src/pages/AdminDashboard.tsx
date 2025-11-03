@@ -287,7 +287,7 @@ export default function AdminDashboard() {
           ) : activeTab === "users" ? (
             <UserManagement />
           ) : activeTab === "new" ? (
-            <NewContract />
+            <NewContract onContractCreated={() => setActiveTab("analytics")} />
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
