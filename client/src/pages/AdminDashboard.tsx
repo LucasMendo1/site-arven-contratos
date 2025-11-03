@@ -156,7 +156,7 @@ export default function AdminDashboard() {
   ) : filteredContracts;
 
   const thisMonthContracts = contracts.filter((contract) => {
-    const contractDate = new Date(contract.submittedAt);
+    const contractDate = new Date(contract.startDate);
     const now = new Date();
     return (
       contractDate.getMonth() === now.getMonth() &&
@@ -370,7 +370,7 @@ export default function AdminDashboard() {
                       <TableHead>Produto</TableHead>
                       <TableHead>Duração</TableHead>
                       <TableHead>Valor</TableHead>
-                      <TableHead>Data</TableHead>
+                      <TableHead>Data de Início</TableHead>
                       {activeTab === "active" && <TableHead>Status</TableHead>}
                       <TableHead>PDF</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
@@ -401,7 +401,7 @@ export default function AdminDashboard() {
                             {contract.ticketValue}
                           </TableCell>
                           <TableCell data-testid={`cell-date-${contract.id}`}>
-                            {format(new Date(contract.submittedAt), "dd/MM/yyyy", { locale: ptBR })}
+                            {format(new Date(contract.startDate), "dd/MM/yyyy", { locale: ptBR })}
                           </TableCell>
                           {activeTab === "active" && (
                             <TableCell data-testid={`cell-status-${contract.id}`}>

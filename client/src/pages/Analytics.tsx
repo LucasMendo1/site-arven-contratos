@@ -112,7 +112,7 @@ export default function Analytics() {
     const monthEnd = endOfMonth(date);
     
     const monthContracts = contracts.filter((contract) => {
-      const contractDate = parseISO(contract.submittedAt);
+      const contractDate = parseISO(contract.startDate);
       return contractDate >= monthStart && contractDate <= monthEnd;
     });
 
