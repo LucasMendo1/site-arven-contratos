@@ -168,6 +168,8 @@ export class SupabaseStorage implements IStorage {
       product: row.product,
       ticketValue: row.ticket_value,
       pdfUrl: row.pdf_url,
+      startDate: row.start_date,
+      paymentFrequency: row.payment_frequency,
       submittedAt: row.submitted_at,
     }));
   }
@@ -197,6 +199,8 @@ export class SupabaseStorage implements IStorage {
       product: data.product,
       ticketValue: data.ticket_value,
       pdfUrl: data.pdf_url,
+      startDate: data.start_date,
+      paymentFrequency: data.payment_frequency,
       submittedAt: data.submitted_at,
     };
   }
@@ -212,6 +216,8 @@ export class SupabaseStorage implements IStorage {
       product: insertContract.product,
       ticket_value: insertContract.ticketValue,
       pdf_url: insertContract.pdfUrl,
+      start_date: insertContract.startDate,
+      payment_frequency: insertContract.paymentFrequency,
     };
 
     const { data, error } = await supabase
@@ -239,6 +245,8 @@ export class SupabaseStorage implements IStorage {
       product: data.product,
       ticketValue: data.ticket_value,
       pdfUrl: data.pdf_url,
+      startDate: data.start_date,
+      paymentFrequency: data.payment_frequency,
       submittedAt: data.submitted_at,
     };
   }
