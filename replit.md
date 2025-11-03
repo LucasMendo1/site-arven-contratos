@@ -13,7 +13,15 @@ Sistema profissional de captura e gestão de contratos desenvolvido para ARVEN A
 - Interface clean e profissional
 
 ### Dashboard Administrativo (/admin) - ACESSO PRIVADO
-- **Quatro Abas de Funcionalidades**:
+- **Cinco Abas de Funcionalidades**:
+  - **Analytics**: Dashboard com gráficos profissionais e métricas financeiras
+    - Faturamento total e mensal
+    - MRR (Monthly Recurring Revenue)
+    - Ticket médio
+    - Evolução de faturamento ao longo do tempo
+    - Distribuição por produto
+    - Distribuição por duração
+    - Top produtos por receita
   - **Todos os Contratos**: Lista completa de todos os contratos cadastrados
   - **Contratos Ativos**: Mostra apenas contratos ativos ou expirando em breve
   - **Novo Contrato**: Formulário para admins criarem novos contratos

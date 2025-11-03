@@ -33,12 +33,14 @@ import {
   Webhook,
   Plus,
   Users,
+  BarChart3,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import WebhookSettings from "./WebhookSettings";
 import NewContract from "./NewContract";
 import UserManagement from "./UserManagement";
+import Analytics from "./Analytics";
 
 type Contract = {
   id: string;
@@ -94,7 +96,7 @@ export default function AdminDashboard() {
   const [, navigate] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
-  const [activeTab, setActiveTab] = useState<"all" | "active" | "new" | "users" | "settings">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "active" | "new" | "users" | "settings" | "analytics">("analytics");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -168,6 +170,18 @@ export default function AdminDashboard() {
         </div>
         
         <nav className="px-3 space-y-1">
+          <button
+            onClick={() => setActiveTab("analytics")}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg font-medium ${
+              activeTab === "analytics"
+                ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                : "text-sidebar-foreground hover-elevate"
+            }`}
+            data-testid="nav-analytics"
+          >
+            <BarChart3 className="w-5 h-5" />
+            Analytics
+          </button>
           <button
             onClick={() => setActiveTab("all")}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg font-medium ${
@@ -247,6 +261,7 @@ export default function AdminDashboard() {
         <header className="bg-white border-b px-8 py-4">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold">
+              {activeTab === "analytics" && "Analytics"}
               {activeTab === "all" && "Todos os Contratos"}
               {activeTab === "active" && "Contratos Ativos"}
               {activeTab === "new" && "Novo Contrato"}
@@ -263,7 +278,9 @@ export default function AdminDashboard() {
         </header>
 
         <div className="p-8">
-          {activeTab === "settings" ? (
+          {activeTab === "analytics" ? (
+            <Analytics />
+          ) : activeTab === "settings" ? (
             <WebhookSettings />
           ) : activeTab === "users" ? (
             <UserManagement />
