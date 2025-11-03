@@ -15,10 +15,15 @@ Sistema profissional de captura e gestão de contratos desenvolvido para ARVEN A
 ### Dashboard Administrativo (/admin) - ACESSO PRIVADO
 - **Cinco Abas de Funcionalidades**:
   - **Analytics**: Dashboard com gráficos profissionais e métricas financeiras
-    - Faturamento total e mensal
-    - MRR (Monthly Recurring Revenue)
+    - **Filtros Avançados**:
+      - Período: Último mês, 3 meses, 6 meses, 1 ano, 2 anos, ou todo o período
+      - Produto: Filtra por produto específico ou todos os produtos
+      - Duração: Filtra por duração do contrato (3 meses, 6 meses, 1 ano, 2 anos)
+      - Indicador visual mostrando "Exibindo X de Y contratos" quando filtros ativos
+    - Faturamento total e mensal (calculado sobre contratos filtrados)
+    - MRR (Monthly Recurring Revenue) com filtros aplicados
     - Ticket médio
-    - Evolução de faturamento ao longo do tempo
+    - Evolução de faturamento ao longo do tempo (período dinâmico)
     - Distribuição por produto
     - Distribuição por duração
     - Top produtos por receita
@@ -245,6 +250,32 @@ Cálculo de expiração:
 - Data de início: `start_date` (data real de início do contrato)
 - Duração: 3 meses, 6 meses, 1 ano ou 2 anos
 - Data de expiração: Data de início + duração do contrato
+
+## Filtros do Analytics
+
+Os filtros do Analytics trabalham em conjunto (lógica AND):
+
+### Filtro de Período
+- Filtra contratos com base na `startDate`
+- Opções: Último mês, 3 meses, 6 meses, 1 ano, 2 anos, todo o período
+- Default: Últimos 6 meses
+- Os gráficos adaptam dinamicamente ao período selecionado
+
+### Filtro de Produto
+- Filtra contratos por produto exato
+- Opções: "Todos os produtos" + lista dinâmica de produtos únicos
+- Default: Todos os produtos
+
+### Filtro de Duração
+- Filtra contratos por duração do contrato
+- Opções: Todas as durações, 3 Meses, 6 Meses, 1 Ano, 2 Anos
+- Default: Todas as durações
+
+### Comportamento dos Filtros
+- Todos os três filtros trabalham em conjunto (AND logic)
+- Métricas (Faturamento, MRR, Ticket Médio) recalculam com base nos contratos filtrados
+- Gráficos de evolução temporal adaptam ao período selecionado
+- Quando filtros reduzem o número de contratos, aparece indicador "Exibindo X de Y contratos"
 
 ## Cálculo de MRR (Monthly Recurring Revenue)
 
