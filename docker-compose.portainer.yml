@@ -1,0 +1,103 @@
+# ===================================
+# DOCKER COMPOSE PARA PORTAINER.IO
+# Sistema ARVEN - Captura de Contratos
+# ===================================
+#
+# INSTRUÇÕES:
+# 1. No Portainer, vá em "Stacks" > "Add stack"
+# 2. Cole este arquivo no "Web editor"
+# 3. Na seção "Environment variables", ative "Load variables from .env file"
+# 4. Cole as variáveis de ambiente (veja abaixo)
+# 5. Clique em "Deploy the stack"
+#
+# ===================================
+
+version: '3.8'
+
+services:
+  arven:
+    image: node:20-alpine
+    container_name: arven-app
+    restart: unless-stopped
+    working_dir: /app
+    
+    ports:
+      - "5000:5000"
+    
+    environment:
+      # Node.js
+      NODE_ENV: production
+      PORT: 5000
+      
+      # Secrets (configurar nas Environment Variables do Portainer)
+      SESSION_SECRET: ${SESSION_SECRET}
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      
+      # Storage
+      DEFAULT_OBJECT_STORAGE_BUCKET_ID: ${DEFAULT_OBJECT_STORAGE_BUCKET_ID}
+      PRIVATE_OBJECT_DIR: ${PRIVATE_OBJECT_DIR}
+      PUBLIC_OBJECT_SEARCH_PATHS: ${PUBLIC_OBJECT_SEARCH_PATHS}
+    
+    volumes:
+      - arven-uploads:/tmp/uploads
+    
+    networks:
+      - arven-network
+    
+    command: |
+      sh -c "
+        echo '🚀 Iniciando deploy do ARVEN...' &&
+        echo '📂 Limpando diretório de trabalho...' &&
+        rm -rf /app/* /app/.git &&
+        
+        echo '📦 Instalando git...' &&
+        apk add --no-cache git &&
+        
+        echo '⬇️  Clonando repositório do GitHub...' &&
+        git clone https://github.com/LucasMendo1/site-arven-contratos.git /tmp/repo &&
+        
+        echo '📁 Copiando arquivos...' &&
+        cp -r /tmp/repo/* /tmp/repo/.* /app/ 2>/dev/null || cp -r /tmp/repo/* /app/ &&
+        rm -rf /tmp/repo &&
+        
+        echo '📂 Criando diretórios de upload...' &&
+        cd /app &&
+        mkdir -p /tmp/uploads/private /tmp/uploads/public &&
+        
+        echo '📦 Instalando dependências Node.js...' &&
+        npm ci --only=production &&
+        
+        echo '🔨 Building aplicação frontend...' &&
+        npm run build &&
+        
+        echo '✅ Iniciando servidor Express...' &&
+        npm start
+      "
+
+volumes:
+  arven-uploads:
+    driver: local
+
+networks:
+  arven-network:
+    driver: bridge
+
+# ===================================
+# VARIÁVEIS DE AMBIENTE (COPIE ABAIXO)
+# ===================================
+#
+# No Portainer, na seção "Environment variables":
+# 1. Ative: ☑️ "Load variables from .env file"
+# 2. Cole este conteúdo no campo de texto:
+#
+# SESSION_SECRET=17260b93cd25323bc07cc5f5fbcd95ee56fe931e4e1fa7d5c8103de99d4c7325
+# SUPABASE_URL=https://msnzdzggmgkaiphuidrs.supabase.co
+# SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1zbnpkemdnbWdrYWlwaHVpZHJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE4Mjg5NzQsImV4cCI6MjA3NzQwNDk3NH0.ENV-b_0O4iPyDu32UI5JvgKNSrIVEmg91hCLQdGgcDo
+# SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1zbnpkemdnbWdrYWlwaHVpZHJzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTgyODk3NCwiZXhwIjoyMDc3NDA0OTc0fQ.NwINEjJXZ7oYZHhCV8btzUNjGtnv1lC_-zR1MjRcOZs
+# DEFAULT_OBJECT_STORAGE_BUCKET_ID=arven-contracts
+# PRIVATE_OBJECT_DIR=/tmp/uploads/private
+# PUBLIC_OBJECT_SEARCH_PATHS=/tmp/uploads/public
+#
+# ===================================
