@@ -241,79 +241,80 @@ export default function Analytics() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight">Analytics</h2>
-        <p className="text-muted-foreground">
-          Visão completa do desempenho do negócio e métricas financeiras
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Analytics</h2>
+          <p className="text-muted-foreground">
+            Visão completa do desempenho do negócio e métricas financeiras
+          </p>
+        </div>
       </div>
 
       {/* Filtros */}
-      <Card className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Filter className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-semibold">Filtros</h3>
+      <div className="flex flex-wrap items-end gap-3 pb-4 border-b">
+        <div className="flex-1 min-w-[200px] space-y-1">
+          <div className="text-xs text-muted-foreground font-medium" style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            PERÍODO
+          </div>
+          <Select value={periodFilter} onValueChange={setPeriodFilter}>
+            <SelectTrigger data-testid="select-period-filter" className="h-9">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1_month">Último mês</SelectItem>
+              <SelectItem value="3_months">Últimos 3 meses</SelectItem>
+              <SelectItem value="6_months">Últimos 6 meses</SelectItem>
+              <SelectItem value="1_year">Último ano</SelectItem>
+              <SelectItem value="2_years">Últimos 2 anos</SelectItem>
+              <SelectItem value="all">Todo o período</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Período</label>
-            <Select value={periodFilter} onValueChange={setPeriodFilter}>
-              <SelectTrigger data-testid="select-period-filter">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1_month">Último mês</SelectItem>
-                <SelectItem value="3_months">Últimos 3 meses</SelectItem>
-                <SelectItem value="6_months">Últimos 6 meses</SelectItem>
-                <SelectItem value="1_year">Último ano</SelectItem>
-                <SelectItem value="2_years">Últimos 2 anos</SelectItem>
-                <SelectItem value="all">Todo o período</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Produto</label>
-            <Select value={productFilter} onValueChange={setProductFilter}>
-              <SelectTrigger data-testid="select-product-filter">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os produtos</SelectItem>
-                {uniqueProducts.map((product) => (
-                  <SelectItem key={product} value={product}>
-                    {product}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <div className="flex-1 min-w-[200px] space-y-1">
+          <div className="text-xs text-muted-foreground font-medium" style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            PRODUTO
           </div>
+          <Select value={productFilter} onValueChange={setProductFilter}>
+            <SelectTrigger data-testid="select-product-filter" className="h-9">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os produtos</SelectItem>
+              {uniqueProducts.map((product) => (
+                <SelectItem key={product} value={product}>
+                  {product}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Duração</label>
-            <Select value={durationFilter} onValueChange={setDurationFilter}>
-              <SelectTrigger data-testid="select-duration-filter">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas as durações</SelectItem>
-                <SelectItem value="3_months">3 Meses</SelectItem>
-                <SelectItem value="6_months">6 Meses</SelectItem>
-                <SelectItem value="1_year">1 Ano</SelectItem>
-                <SelectItem value="2_years">2 Anos</SelectItem>
-              </SelectContent>
-            </Select>
+        <div className="flex-1 min-w-[200px] space-y-1">
+          <div className="text-xs text-muted-foreground font-medium" style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            DURAÇÃO
           </div>
+          <Select value={durationFilter} onValueChange={setDurationFilter}>
+            <SelectTrigger data-testid="select-duration-filter" className="h-9">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as durações</SelectItem>
+              <SelectItem value="3_months">3 Meses</SelectItem>
+              <SelectItem value="6_months">6 Meses</SelectItem>
+              <SelectItem value="1_year">1 Ano</SelectItem>
+              <SelectItem value="2_years">2 Anos</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {filteredContracts.length < allContracts.length && (
-          <div className="mt-4 p-3 rounded-lg bg-blue-50 border border-blue-200">
-            <p className="text-sm text-blue-700">
-              Exibindo {filteredContracts.length} de {allContracts.length} contratos
-            </p>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-muted text-xs text-muted-foreground">
+            <Filter className="w-3 h-3" />
+            <span>{filteredContracts.length} de {allContracts.length} contratos</span>
           </div>
         )}
-      </Card>
+      </div>
 
       {/* Cards de Métricas Principais */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
