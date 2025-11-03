@@ -57,7 +57,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-muted to-background px-4">
       <Card className="max-w-md w-full shadow-2xl p-10">
         <div className="mb-8 text-center">
-          <div className="inline-block bg-sidebar rounded-lg px-6 py-4 mb-6">
+          <div className="bg-sidebar rounded-lg px-6 py-4 mb-6 mx-auto w-fit">
             <Logo />
           </div>
           <h2 className="text-3xl font-bold mb-2">Área Administrativa</h2>
