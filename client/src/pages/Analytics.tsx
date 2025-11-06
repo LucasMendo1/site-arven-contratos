@@ -1,9 +1,11 @@
+/** @jsxImportSource react */
 import { useState } from "react";
+import type { FC } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, TrendingUp, DollarSign, Calendar, Users, ArrowUpRight, ArrowDownRight, Filter } from "lucide-react";
-import { format, startOfMonth, endOfMonth, subMonths, parseISO, differenceInMonths } from "date-fns";
+import { format, startOfMonth, endOfMonth, subMonths, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   LineChart,
@@ -23,22 +25,30 @@ import {
   AreaChart,
 } from "recharts";
 
+interface Stats {
+  count: number;
+  revenue: number;
+}
+
+type ProductStats = Record<string, Stats>;
+type DurationStats = Record<string, number>;
+
 type Contract = {
   id: string;
   clientName: string;
   clientPhone: string;
   companyName: string;
   document: string;
-  contractDuration: string;
+  contractDuration: "3_months" | "6_months" | "1_year" | "2_years";
   product: string;
   ticketValue: string;
   pdfUrl: string;
   submittedAt: string;
   startDate: string;
-  paymentFrequency: string;
+  paymentFrequency: "monthly" | "quarterly" | "biannual" | "annual" | "one_time";
 };
 
-const durationMonths: Record<string, number> = {
+const durationMonths: Record<Contract['contractDuration'], number> = {
   "3_months": 3,
   "6_months": 6,
   "1_year": 12,
@@ -49,37 +59,29 @@ const parseTicketValue = (value: string): number => {
   return parseFloat(value.replace(/[^\d,]/g, "").replace(",", ".")) || 0;
 };
 
-// Calcula MRR baseado na frequência de pagamento
-// Se ticketValue é o valor TOTAL do contrato: MRR = total / duração
-// Se ticketValue é o valor de CADA PARCELA: MRR depende da frequência
-const calculateMRR = (ticketValue: number, duration: number, paymentFrequency: string): number => {
-  // Assumindo que ticketValue é o valor TOTAL do contrato
-  // MRR normalizado = valor total / duração em meses
-  // (independente da frequência de pagamento)
+const calculateMRR = (ticketValue: number, duration: number, paymentFrequency: Contract['paymentFrequency']): number => {
+  // ticketValue é o valor TOTAL do contrato
+  // Para calcular o MRR, simplesmente dividimos o valor total pela duração em meses
+  // A frequência de pagamento não afeta o MRR, pois é apenas como o valor total é dividido
   return ticketValue / duration;
-  
-  // Se ticketValue fosse o valor de cada parcela, usaríamos:
-  // switch (paymentFrequency) {
-  //   case "monthly": return ticketValue;
-  //   case "quarterly": return ticketValue / 3;
-  //   case "biannual": return ticketValue / 6;
-  //   case "annual": return ticketValue / 12;
-  //   case "one_time": return ticketValue / duration;
-  //   default: return ticketValue / duration;
-  // }
 };
 
 const COLORS = ["#1a2332", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
 
-export default function Analytics() {
+const Analytics: FC = () => {
   const [periodFilter, setPeriodFilter] = useState<string>("6_months");
   const [productFilter, setProductFilter] = useState<string>("all");
   const [durationFilter, setDurationFilter] = useState<string>("all");
+  
+  const formatStats = (stats: Stats) => ({
+    value: stats.count,
+    revenue: stats.revenue
+  });
 
   const { data: allContracts = [], isLoading } = useQuery<Contract[]>({
     queryKey: ["/api/contracts"],
     refetchOnMount: true,
-  });
+  } as const);
 
   if (isLoading) {
     return (
@@ -90,7 +92,18 @@ export default function Analytics() {
   }
 
   // Aplicar filtros
-  const filteredContracts = allContracts.filter((contract) => {
+  type PeriodFilter = "1_month" | "3_months" | "6_months" | "1_year" | "2_years" | "all";
+  
+  const periodToMonths: Record<PeriodFilter, number> = {
+    "1_month": 1,
+    "3_months": 3,
+    "6_months": 6,
+    "1_year": 12,
+    "2_years": 24,
+    "all": 12
+  };
+
+  const filteredContracts = allContracts.filter((contract: Contract) => {
     // Filtro de produto
     if (productFilter !== "all" && contract.product !== productFilter) {
       return false;
@@ -105,13 +118,7 @@ export default function Analytics() {
     if (periodFilter !== "all") {
       const contractDate = parseISO(contract.startDate);
       const now = new Date();
-      const monthsAgo = {
-        "1_month": 1,
-        "3_months": 3,
-        "6_months": 6,
-        "1_year": 12,
-        "2_years": 24,
-      }[periodFilter];
+      const monthsAgo = periodToMonths[periodFilter as PeriodFilter];
 
       if (monthsAgo) {
         const cutoffDate = subMonths(now, monthsAgo);
@@ -128,27 +135,20 @@ export default function Analytics() {
   const totalContracts = filteredContracts.length;
   
   // Faturamento total
-  const totalRevenue = filteredContracts.reduce((sum, contract) => {
+  const totalRevenue = filteredContracts.reduce((sum: number, contract: Contract) => {
     return sum + parseTicketValue(contract.ticketValue);
   }, 0);
 
   // MRR (Monthly Recurring Revenue)
-  const mrr = filteredContracts.reduce((sum, contract) => {
+  const mrr = filteredContracts.reduce((sum: number, contract: Contract) => {
     const ticketValue = parseTicketValue(contract.ticketValue);
-    const duration = durationMonths[contract.contractDuration] || 12;
+    const duration = durationMonths[contract.contractDuration];
     return sum + calculateMRR(ticketValue, duration, contract.paymentFrequency);
   }, 0);
 
   // Contratos por mês (dinâmico baseado no filtro)
   const getMonthsForPeriod = () => {
-    const monthsCount = {
-      "1_month": 1,
-      "3_months": 3,
-      "6_months": 6,
-      "1_year": 12,
-      "2_years": 24,
-      "all": 12, // Se "all", mostra últimos 12 meses por padrão
-    }[periodFilter] || 6;
+    const monthsCount = periodToMonths[periodFilter as PeriodFilter] || 6;
 
     return Array.from({ length: monthsCount }, (_, i) => {
       const date = subMonths(new Date(), monthsCount - 1 - i);
@@ -165,18 +165,18 @@ export default function Analytics() {
     const monthStart = startOfMonth(date);
     const monthEnd = endOfMonth(date);
     
-    const monthContracts = filteredContracts.filter((contract) => {
+    const monthContracts = filteredContracts.filter((contract: Contract) => {
       const contractDate = parseISO(contract.startDate);
       return contractDate >= monthStart && contractDate <= monthEnd;
     });
 
-    const revenue = monthContracts.reduce((sum, contract) => {
+    const revenue = monthContracts.reduce((sum: number, contract: Contract) => {
       return sum + parseTicketValue(contract.ticketValue);
     }, 0);
 
-    const monthMrr = monthContracts.reduce((sum, contract) => {
+    const monthMrr = monthContracts.reduce((sum: number, contract: Contract) => {
       const ticketValue = parseTicketValue(contract.ticketValue);
-      const duration = durationMonths[contract.contractDuration] || 12;
+      const duration = durationMonths[contract.contractDuration];
       return sum + calculateMRR(ticketValue, duration, contract.paymentFrequency);
     }, 0);
 
@@ -189,7 +189,7 @@ export default function Analytics() {
   });
 
   // Contratos por produto
-  const productStats = filteredContracts.reduce((acc, contract) => {
+  const productStats = filteredContracts.reduce<ProductStats>((acc, contract) => {
     const product = contract.product || "Outros";
     if (!acc[product]) {
       acc[product] = { count: 0, revenue: 0 };
@@ -197,7 +197,7 @@ export default function Analytics() {
     acc[product].count++;
     acc[product].revenue += parseTicketValue(contract.ticketValue);
     return acc;
-  }, {} as Record<string, { count: number; revenue: number }>);
+  }, {} as ProductStats);
 
   const productData = Object.entries(productStats).map(([name, stats]) => ({
     name,
@@ -206,21 +206,21 @@ export default function Analytics() {
   }));
 
   // Contratos por duração
-  const durationStats = filteredContracts.reduce((acc, contract) => {
-    const duration = contract.contractDuration;
-    const label = {
-      "3_months": "3 Meses",
-      "6_months": "6 Meses",
-      "1_year": "1 Ano",
-      "2_years": "2 Anos",
-    }[duration] || "Outros";
-    
+  const durationLabels: Record<Contract['contractDuration'], string> = {
+    "3_months": "3 Meses",
+    "6_months": "6 Meses",
+    "1_year": "1 Ano",
+    "2_years": "2 Anos"
+  };
+
+  const durationStats = filteredContracts.reduce((acc: DurationStats, contract: Contract) => {
+    const label = durationLabels[contract.contractDuration] || "Outros";
     if (!acc[label]) {
       acc[label] = 0;
     }
     acc[label]++;
     return acc;
-  }, {} as Record<string, number>);
+  }, {});
 
   const durationData = Object.entries(durationStats).map(([name, value]) => ({
     name,
@@ -237,7 +237,7 @@ export default function Analytics() {
   const averageTicket = totalContracts > 0 ? totalRevenue / totalContracts : 0;
 
   // Obter lista de produtos únicos
-  const uniqueProducts = Array.from(new Set(allContracts.map(c => c.product)));
+  const uniqueProducts = Array.from(new Set(allContracts.map((c: Contract) => c.product)));
 
   return (
     <div className="space-y-6">
@@ -567,3 +567,5 @@ export default function Analytics() {
     </div>
   );
 }
+
+export default Analytics;
