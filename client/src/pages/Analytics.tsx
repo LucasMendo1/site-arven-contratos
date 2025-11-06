@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, TrendingUp, DollarSign, Calendar, Users, ArrowUpRight, ArrowDownRight, Filter } from "lucide-react";
-import { format, startOfMonth, endOfMonth, subMonths, parseISO } from "date-fns";
+import { format, startOfMonth, endOfMonth, subMonths, parseISO, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   LineChart,
@@ -178,6 +178,29 @@ const Analytics: FC = () => {
     return sum + calculateMRR(ticketValue, duration, contract.paymentFrequency);
   }, 0);
 
+  // Calcular MRR atual (contratos ativos hoje) — considera startDate + duração
+  const now = new Date();
+  const activeContractsNow = allContracts.filter((contract: Contract) => {
+    // respeita filtros de produto e duração, mas ignora filtro de período (usado apenas para views)
+    if (productFilter !== "all" && contract.product !== productFilter) return false;
+    if (durationFilter !== "all" && contract.contractDuration !== durationFilter) return false;
+
+    // compute start and end
+    const start = parseISO(contract.startDate);
+    const months = durationMonths[contract.contractDuration] || 1;
+    const end = addMonths(start, months);
+
+    // ativo agora se start <= now < end
+    return start <= now && now < end;
+  });
+
+  const currentMrr = activeContractsNow.reduce((sum: number, contract: Contract) => {
+    if (contract.paymentFrequency === "one_time") return sum;
+    const ticketValue = parseTicketValue(contract.ticketValue);
+    const duration = durationMonths[contract.contractDuration];
+    return sum + calculateMRR(ticketValue, duration, contract.paymentFrequency);
+  }, 0);
+
   // Contratos por mês (dinâmico baseado no filtro)
   const getMonthsForPeriod = () => {
     const monthsCount = periodToMonths[periodFilter as PeriodFilter] || 6;
@@ -197,9 +220,12 @@ const Analytics: FC = () => {
     const monthStart = startOfMonth(date);
     const monthEnd = endOfMonth(date);
     
+    // contratos ativos naquele mês: start <= monthEnd && end > monthStart
     const monthContracts = filteredContracts.filter((contract: Contract) => {
-      const contractDate = parseISO(contract.startDate);
-      return contractDate >= monthStart && contractDate <= monthEnd;
+      const start = parseISO(contract.startDate);
+      const months = durationMonths[contract.contractDuration] || 1;
+      const end = addMonths(start, months);
+      return start <= monthEnd && end > monthStart;
     });
 
     const revenue = monthContracts.reduce((sum: number, contract: Contract) => {
