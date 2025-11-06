@@ -170,6 +170,9 @@ const Analytics: FC = () => {
 
   // MRR (Monthly Recurring Revenue)
   const mrr = filteredContracts.reduce((sum: number, contract: Contract) => {
+    // Exclui pagamentos one_time do cálculo de receita recorrente
+    if (contract.paymentFrequency === "one_time") return sum;
+
     const ticketValue = parseTicketValue(contract.ticketValue);
     const duration = durationMonths[contract.contractDuration];
     return sum + calculateMRR(ticketValue, duration, contract.paymentFrequency);
@@ -204,6 +207,9 @@ const Analytics: FC = () => {
     }, 0);
 
     const monthMrr = monthContracts.reduce((sum: number, contract: Contract) => {
+      // Ignora pagamentos one_time ao computar MRR mensal
+      if (contract.paymentFrequency === "one_time") return sum;
+
       const ticketValue = parseTicketValue(contract.ticketValue);
       const duration = durationMonths[contract.contractDuration];
       return sum + calculateMRR(ticketValue, duration, contract.paymentFrequency);
