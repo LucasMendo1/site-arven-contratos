@@ -201,6 +201,12 @@ const Analytics: FC = () => {
     return sum + calculateMRR(ticketValue, duration, contract.paymentFrequency);
   }, 0);
 
+  // Número de contratos recorrentes ativos agora (exclui one_time)
+  const activeRecurringCount = activeContractsNow.filter((c) => c.paymentFrequency !== "one_time").length;
+
+  // Ticket médio mensal por contrato (com fallback)
+  const ticketMonthlyAvg = activeRecurringCount > 0 ? currentMrr / activeRecurringCount : 0;
+
   // Contratos por mês (dinâmico baseado no filtro)
   const getMonthsForPeriod = () => {
     const monthsCount = periodToMonths[periodFilter as PeriodFilter] || 6;
@@ -403,13 +409,13 @@ const Analytics: FC = () => {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {mrr.toLocaleString("pt-BR", {
-                style: "currency",
-                currency: "BRL",
-              })}
-            </div>
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <div className="text-2xl font-bold">
+                  {currentMrr.toLocaleString("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
+                  })}
+                </div>
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
               {mrrGrowth >= 0 ? (
                 <>
                   <ArrowUpRight className="h-3 w-3 text-green-600" />
@@ -421,7 +427,7 @@ const Analytics: FC = () => {
                   <span className="text-red-600">{mrrGrowth.toFixed(1)}%</span>
                 </>
               )}
-              vs mês anterior
+                  vs mês anterior
             </p>
           </CardContent>
         </Card>
@@ -432,15 +438,15 @@ const Analytics: FC = () => {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {averageTicket.toLocaleString("pt-BR", {
-                style: "currency",
-                currency: "BRL",
-              })}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Por contrato
-            </p>
+                <div className="text-2xl font-bold">
+                  {ticketMonthlyAvg.toLocaleString("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
+                  })}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Por contrato / mês
+                </p>
           </CardContent>
         </Card>
 
