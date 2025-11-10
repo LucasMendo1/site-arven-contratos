@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, TrendingUp, DollarSign, Calendar, Users, ArrowUpRight, ArrowDownRight, Filter } from "lucide-react";
 import { format, startOfMonth, endOfMonth, subMonths, parseISO, addMonths } from "date-fns";
+import { parseTicketValue, calculateMRR, durationMonths } from "@/lib/mrr";
 import { ptBR } from "date-fns/locale";
 import {
   LineChart,
@@ -48,52 +49,6 @@ type Contract = {
   paymentFrequency: "monthly" | "quarterly" | "biannual" | "annual" | "one_time";
 };
 
-const durationMonths: Record<Contract['contractDuration'], number> = {
-  "3_months": 3,
-  "6_months": 6,
-  "1_year": 12,
-  "2_years": 24,
-};
-
-const parseTicketValue = (value: string): number => {
-  if (!value) return 0;
-  // Remove espaços e símbolos
-  const raw = String(value).trim();
-
-  // Keep digits, dots and commas
-  const cleaned = raw.replace(/[^\d.,]/g, "");
-
-  // If both dot and comma exist, assume dot is thousand separator and comma is decimal (BR format)
-  if (cleaned.indexOf('.') !== -1 && cleaned.indexOf(',') !== -1) {
-    const withoutDots = cleaned.replace(/\./g, '');
-    const normalized = withoutDots.replace(/,/g, '.');
-    return parseFloat(normalized) || 0;
-  }
-
-  // If only comma exists, assume comma is decimal separator
-  if (cleaned.indexOf(',') !== -1) {
-    return parseFloat(cleaned.replace(/,/g, '.')) || 0;
-  }
-
-  // Otherwise, parse as standard float (dot as decimal)
-  return parseFloat(cleaned) || 0;
-};
-
-const calculateMRR = (
-  ticketValue: number,
-  duration: number,
-  paymentFrequency: Contract['paymentFrequency']
-): number => {
-  // Segurança: evitar divisão por zero
-  const months = duration && duration > 0 ? duration : 1;
-
-  // Assumimos que `ticketValue` é o valor TOTAL do contrato.
-  // MRR é o valor mensal reconhecido: valor total dividido pela duração em meses.
-  // Para frequências atípicas (one_time) também espalhamos o valor pela duração.
-  // Se, no futuro, o sistema passar a armazenar o valor por parcela, teremos que ajustar
-  // para usar paymentFrequency (por exemplo: parcela trimestral => dividir por 3).
-  return ticketValue / months;
-};
 
 const COLORS = ["#1a2332", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
 
